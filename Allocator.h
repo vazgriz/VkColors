@@ -15,6 +15,12 @@ struct Page {
     size_t ptr;
 };
 
+struct StagingData {
+    size_t offset;
+    size_t size;
+    vk::Buffer* dstBuffer;
+};
+
 class Allocator {
 public:
     Allocator(Core& core);
@@ -24,13 +30,20 @@ public:
     Allocator& operator = (Allocator&& other) = default;
 
     Allocation allocate(vk::MemoryRequirements requirements, vk::MemoryPropertyFlags preferred, vk::MemoryPropertyFlags required);
+    void Transfer(void* data, size_t size, vk::Buffer& dstBuffer);
+    void FlushStaging(vk::CommandBuffer& commandBuffer);
 
 private:
     Core* m_core;
     vk::MemoryProperties m_properties;
     std::vector<std::vector<Page>> m_pages;
+    std::unique_ptr<vk::Buffer> m_stagingBuffer;
+    Page* m_stagingMemory;
+    void* m_stagingMapping;
+    std::vector<StagingData> m_stagingData;
 
     size_t align(size_t ptr, size_t align);
     Allocation tryAlloc(uint32_t type, vk::MemoryRequirements requirements);
     Page* allocNewPage(uint32_t type, size_t size);
+    void createStagingMemory();
 };
