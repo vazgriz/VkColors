@@ -81,6 +81,31 @@ void Core::present() {
     m_presentQueue->present(presentInfo);
 }
 
+vk::CommandBuffer Core::getSingleUseCommandBuffer() {
+    vk::CommandBufferAllocateInfo info = {};
+    info.commandPool = m_commandPool.get();
+    info.commandBufferCount = 1;
+    
+    vk::CommandBuffer commandBuffer = std::move(m_commandPool->allocate(info)[0]);
+
+    vk::CommandBufferBeginInfo beginInfo = {};
+    beginInfo.flags = vk::CommandBufferUsageFlags::OneTimeSubmit;
+
+    commandBuffer.begin(beginInfo);
+
+    return commandBuffer;
+}
+
+void Core::submitSingleUseCommandBuffer(vk::CommandBuffer&& commandBuffer) {
+    commandBuffer.end();
+
+    vk::SubmitInfo info = {};
+    info.commandBuffers = { commandBuffer };
+    
+    m_graphicsQueue->submit({ info }, nullptr);
+    m_graphicsQueue->waitIdle();
+}
+
 void Core::createInstance() {
     vk::ApplicationInfo appInfo = {};
     appInfo.applicationName = "VkColors";

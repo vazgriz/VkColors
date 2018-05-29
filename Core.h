@@ -16,6 +16,8 @@ public:
     void acquire();
     vk::CommandBuffer& getCommandBuffer();
     void present();
+    vk::CommandBuffer getSingleUseCommandBuffer();
+    void submitSingleUseCommandBuffer(vk::CommandBuffer&& commandBuffer);
 
     vk::Device& device() { return *m_device; }
     vk::Swapchain& swapchain() { return *m_swapchain; }
