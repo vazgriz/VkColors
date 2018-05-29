@@ -106,6 +106,7 @@ void Allocator::transfer(void* data, size_t size, vk::Buffer& dstBuffer) {
     size_t offset = align(m_stagingMemory->ptr, 4);
     memcpy(static_cast<char*>(m_stagingMapping) + offset, data, size);
     m_stagingData.emplace_back(StagingData{ offset, size, &dstBuffer });
+    m_stagingMemory->ptr = offset + size;
 }
 
 void Allocator::flushStaging(vk::CommandBuffer& commandBuffer) {
