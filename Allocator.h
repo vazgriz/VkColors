@@ -30,8 +30,8 @@ public:
     Allocator& operator = (Allocator&& other) = default;
 
     Allocation allocate(vk::MemoryRequirements requirements, vk::MemoryPropertyFlags preferred, vk::MemoryPropertyFlags required);
-    void Transfer(void* data, size_t size, vk::Buffer& dstBuffer);
-    void FlushStaging(vk::CommandBuffer& commandBuffer);
+    void transfer(void* data, size_t size, vk::Buffer& dstBuffer);
+    void flushStaging(vk::CommandBuffer& commandBuffer);
 
 private:
     Core* m_core;
