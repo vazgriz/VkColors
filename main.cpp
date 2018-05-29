@@ -5,6 +5,7 @@
 #include <iomanip>
 #include "Core.h"
 #include "Allocator.h"
+#include "Renderer.h"
 
 int main() {
     auto last = std::chrono::system_clock::now();
@@ -16,6 +17,7 @@ int main() {
 
     Core core = Core(window, 800, 600);
     Allocator allocator = Allocator(core);
+    Renderer renderer = Renderer(core, allocator, 2048, 1024);
 
     size_t frames = 0;
 
@@ -24,6 +26,7 @@ int main() {
         glfwPollEvents();
 
         core.acquire();
+        renderer.record(core.getCommandBuffer());
         core.present();
 
         frames++;
