@@ -21,6 +21,7 @@ public:
 
     vk::Device& device() { return *m_device; }
     vk::Swapchain& swapchain() { return *m_swapchain; }
+    vk::RenderPass& renderPass() { return *m_renderPass; }
 
 private:
     GLFWwindow* m_window;
