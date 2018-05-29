@@ -35,6 +35,10 @@
         {
           "name": "VKW_LIB",
           "value": "C:/Users/Ryan/Documents/Code/Projects/VulkanWrapper/build/x64-Debug/src/VulkanWrapper.lib"
+        },
+        {
+          "name": "GLSL_VALIDATOR",
+          "value": "${env.VULKAN_SDK}/Bin/glslc.exe"
         }
       ]
     },
@@ -72,6 +76,10 @@
         {
           "name": "VKW_LIB",
           "value": "C:/Users/Ryan/Documents/Code/Projects/VulkanWrapper/build/x64-Release/src/VulkanWrapper.lib"
+        },
+        {
+          "name": "GLSL_VALIDATOR",
+          "value": "${env.VULKAN_SDK}/Bin/glslc.exe"
         }
       ]
     }
