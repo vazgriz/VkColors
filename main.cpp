@@ -38,6 +38,8 @@ int main() {
         }
     }
 
+    core.device().waitIdle();
+
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;

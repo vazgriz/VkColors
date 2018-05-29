@@ -30,10 +30,6 @@ Core::Core(Core&& other) {
     *this = std::move(other);
 }
 
-Core::~Core() {
-    m_device->waitIdle();
-}
-
 void Core::ResizeWindow(GLFWwindow* window, int width, int height) {
     int fbWidth;
     int fbHeight;

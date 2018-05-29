@@ -10,7 +10,6 @@ public:
     Core& operator = (const Core& other) = delete;
     Core(Core&& other);
     Core& operator = (Core&& other) = default;
-    ~Core();
 
     uint32_t imageIndex() { return m_imageIndex; }
     void acquire();
