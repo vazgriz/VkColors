@@ -1,5 +1,6 @@
 #include "Core.h"
 #include <set>
+#include <iostream>
 
 const std::vector<std::string> validationLayers = {
   "VK_LAYER_LUNARG_standard_validation"
@@ -11,8 +12,6 @@ const std::vector<std::string> deviceExtensions = {
 
 Core::Core(GLFWwindow* window, int width, int height) {
     m_window = window;
-    m_width = width;
-    m_height = height;
 
     createInstance();
     createSurface();
@@ -21,6 +20,10 @@ Core::Core(GLFWwindow* window, int width, int height) {
     createCommandPool();
     recreateSwapchain();
     createSemaphores();
+
+    glfwSetWindowUserPointer(window, this);
+    glfwSetWindowSizeCallback(window, &ResizeWindow);
+    ResizeWindow(window, 0, 0);
 }
 
 Core::Core(Core&& other) {
@@ -31,7 +34,24 @@ Core::~Core() {
     m_device->waitIdle();
 }
 
+void Core::ResizeWindow(GLFWwindow* window, int width, int height) {
+    int fbWidth;
+    int fbHeight;
+    glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+
+    Core* core = reinterpret_cast<Core*>(glfwGetWindowUserPointer(window));
+    core->m_width = fbWidth;
+    core->m_height = fbHeight;
+    core->resizeFlag = true;
+}
+
 void Core::acquire() {
+    if (resizeFlag) {
+        resizeFlag = false;
+        m_device->waitIdle();
+        recreateSwapchain();
+    }
+
     m_imageIndex = m_swapchain->acquireNextImage(~0, m_acquireSem.get(), nullptr);
     m_commandBuffer = &m_commandBuffers[m_imageIndex];
     m_fences[m_imageIndex].wait();

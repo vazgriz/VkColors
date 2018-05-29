@@ -23,6 +23,7 @@ private:
     GLFWwindow* m_window;
     int m_width;
     int m_height;
+    bool resizeFlag = false;
     std::unique_ptr<vk::Instance> m_instance;
     const vk::PhysicalDevice* m_physicalDevice = nullptr;
     std::unique_ptr<vk::Surface> m_surface;
@@ -45,6 +46,8 @@ private:
 
     uint32_t m_imageIndex;
     vk::CommandBuffer* m_commandBuffer;
+
+    static void ResizeWindow(GLFWwindow* window, int width, int height);
 
     void createInstance();
     void selectPhysicalDevice();
