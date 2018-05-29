@@ -61,6 +61,9 @@ vk::CommandBuffer& Core::getCommandBuffer() {
 }
 
 void Core::present() {
+    m_commandBuffer->endRenderPass();
+    m_commandBuffer->end();
+
     vk::SubmitInfo submitInfo = {};
     submitInfo.commandBuffers = { *m_commandBuffer };
     submitInfo.waitSemaphores = { *m_acquireSem };
@@ -446,7 +449,4 @@ void Core::recordCommands(vk::CommandBuffer& commandBuffer) {
     renderPassInfo.clearValues = { clearColor };
 
     commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::Inline);
-
-    commandBuffer.endRenderPass();
-    commandBuffer.end();
 }
