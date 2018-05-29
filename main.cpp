@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iomanip>
 #include "Core.h"
+#include "Allocator.h"
 
 int main() {
     auto last = std::chrono::system_clock::now();
@@ -14,6 +15,7 @@ int main() {
     GLFWwindow* window = glfwCreateWindow(800, 600, "Colors", nullptr, nullptr);
 
     Core core = Core(window, 800, 600);
+    Allocator allocator = Allocator(core);
 
     size_t frames = 0;
 

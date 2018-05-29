@@ -9,6 +9,6 @@ set(VULKAN_LIB)
 set(VKW_INCLUDE)
 set(VKW_LIB)
 
-add_executable(VkColors main.cpp core.cpp bitmap.cpp)
+add_executable(VkColors main.cpp core.cpp bitmap.cpp allocator.cpp)
 target_include_directories(VkColors PUBLIC ${GLFW_INCLUDE} ${VULKAN_INCLUDE} ${VKW_INCLUDE})
 target_link_libraries(VkColors ${GLFW_LIB} ${VULKAN_LIB} ${VKW_LIB})
