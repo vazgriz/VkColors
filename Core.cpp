@@ -40,10 +40,6 @@ void Core::ResizeWindow(GLFWwindow* window, int width, int height) {
     core->m_width = fbWidth;
     core->m_height = fbHeight;
     core->resizeFlag = true;
-
-    for (auto observer : core->m_observers) {
-        observer->onResize(fbWidth, fbHeight);
-    }
 }
 
 void Core::registerObserver(Observer* observer) {
@@ -55,6 +51,10 @@ void Core::acquire() {
         resizeFlag = false;
         m_device->waitIdle();
         recreateSwapchain();
+
+        for (auto observer : m_observers) {
+            observer->onResize(m_width, m_height);
+        }
     }
 
     m_imageIndex = m_swapchain->acquireNextImage(~0, m_acquireSem.get(), nullptr);
