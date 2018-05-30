@@ -1,5 +1,5 @@
 #include "Renderer.h"
-#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "Utilities.h"
 
 struct Vertex {
@@ -52,6 +52,10 @@ Renderer::Renderer(Core& core, Allocator& allocator, int32_t width, int32_t heig
     createDescriptorSet();
     createPipelineLayout();
     createPipeline();
+
+    int32_t wWidth = static_cast<int32_t>(m_core->swapchain().extent().width);
+    int32_t wHeight = static_cast<int32_t>(m_core->swapchain().extent().height);
+    projectionMatrix = glm::ortho(-wWidth / 2.0f, wWidth / 2.0f, -wHeight / 2.0f, wHeight / 2.0f, 0.0f, 1.0f);
 }
 
 Renderer::Renderer(Renderer&& other) {
@@ -62,6 +66,7 @@ void Renderer::record(vk::CommandBuffer& commandBuffer) {
     commandBuffer.bindVertexBuffers(0, { *m_vertexBuffer }, { 0 });
     commandBuffer.bindIndexBuffer(*m_indexBuffer, 0, vk::IndexType::Uint32);
     commandBuffer.bindPipeline(vk::PipelineBindPoint::Graphics, *m_pipeline);
+    commandBuffer.pushConstants(*m_pipelineLayout, vk::ShaderStageFlags::Vertex, 0, sizeof(glm::mat4), &projectionMatrix);
     commandBuffer.drawIndexed(6, 1, 0, 0, 0);
 }
 
@@ -120,7 +125,12 @@ void Renderer::createDescriptorSet() {
 }
 
 void Renderer::createPipelineLayout() {
+    vk::PushConstantRange range = {};
+    range.size = sizeof(glm::mat4);
+    range.stageFlags = vk::ShaderStageFlags::Vertex;
+
     vk::PipelineLayoutCreateInfo info = {};
+    info.pushConstantRanges = { range };
     
     m_pipelineLayout = std::make_unique<vk::PipelineLayout>(m_core->device(), info);
 }

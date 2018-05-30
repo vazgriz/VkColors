@@ -6,11 +6,15 @@ layout(location = 1) in vec2 uv;
 
 layout(location = 0) out vec2 fragUV;
 
+layout(push_constant) uniform Camera {
+    mat4 proj;
+} cam;
+
 out gl_PerVertex {
     vec4 gl_Position;
 };
 
 void main() {
-    gl_Position = vec4(pos, 1.0);
+    gl_Position = cam.proj * vec4(pos, 1.0);
     fragUV = uv;
 }

@@ -1,6 +1,8 @@
 #pragma once
 #include "Core.h"
 #include "Allocator.h"
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
 
 class Renderer {
 public:
@@ -28,6 +30,7 @@ private:
     std::unique_ptr<vk::DescriptorSet> m_descriptorSet;
     std::unique_ptr<vk::PipelineLayout> m_pipelineLayout;
     std::unique_ptr<vk::Pipeline> m_pipeline;
+    glm::mat4 projectionMatrix;
 
     void createVertexBuffer(vk::CommandBuffer& commandBuffer);
     void createIndexBuffer(vk::CommandBuffer& commandBuffer);
