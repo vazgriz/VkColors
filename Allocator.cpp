@@ -126,6 +126,7 @@ void Allocator::flushStaging(vk::CommandBuffer& commandBuffer) {
             commandBuffer.copyBuffer(*m_stagingBuffer, *transfer.dstBuffer, copy);
         } else if (transfer.dstImage != nullptr) {
             vk::BufferImageCopy copy = {};
+            copy.bufferOffset = transfer.offset;
             copy.imageExtent = transfer.dstImage->extent();
             copy.imageSubresource.aspectMask = vk::ImageAspectFlags::Color;
             copy.imageSubresource.baseArrayLayer = 0;
