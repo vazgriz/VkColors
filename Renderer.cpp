@@ -66,12 +66,44 @@ Renderer::Renderer(Renderer&& other) {
 }
 
 void Renderer::record(vk::CommandBuffer& commandBuffer) {
+    vk::ImageMemoryBarrier barrier = {};
+    barrier.image = m_texture.get();
+    barrier.oldLayout = vk::ImageLayout::ShaderReadOnlyOptimal;
+    barrier.newLayout = vk::ImageLayout::TransferDstOptimal;
+    barrier.srcAccessMask = vk::AccessFlags::ShaderRead;
+    barrier.dstAccessMask = vk::AccessFlags::TransferWrite;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.subresourceRange.aspectMask = vk::ImageAspectFlags::Color;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+
+    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::FragmentShader, vk::PipelineStageFlags::Transfer, vk::DependencyFlags::None,
+        {}, {}, { barrier });
+
+    m_allocator->transfer(m_bitmap->data(), m_bitmap->size(), *m_texture, vk::ImageLayout::TransferDstOptimal);
+    m_allocator->flushStaging(commandBuffer);
+
+    barrier.oldLayout = vk::ImageLayout::TransferDstOptimal;
+    barrier.newLayout = vk::ImageLayout::ShaderReadOnlyOptimal;
+    barrier.srcAccessMask = vk::AccessFlags::TransferWrite;
+    barrier.dstAccessMask = vk::AccessFlags::ShaderRead;
+
+    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::Transfer, vk::PipelineStageFlags::FragmentShader, vk::DependencyFlags::None,
+        {}, {}, { barrier });
+
+    m_core->beginRenderPass(commandBuffer);
+
     commandBuffer.bindVertexBuffers(0, { *m_vertexBuffer }, { 0 });
     commandBuffer.bindIndexBuffer(*m_indexBuffer, 0, vk::IndexType::Uint32);
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::Graphics, *m_pipelineLayout, 0, { *m_descriptorSet }, {});
     commandBuffer.bindPipeline(vk::PipelineBindPoint::Graphics, *m_pipeline);
     commandBuffer.pushConstants(*m_pipelineLayout, vk::ShaderStageFlags::Vertex, 0, sizeof(glm::mat4), &m_projectionMatrix);
     commandBuffer.drawIndexed(6, 1, 0, 0, 0);
+
+    commandBuffer.endRenderPass();
 }
 
 void Renderer::onResize(int width, int height) {

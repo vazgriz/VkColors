@@ -22,6 +22,7 @@ public:
     void present();
     vk::CommandBuffer getSingleUseCommandBuffer();
     void submitSingleUseCommandBuffer(vk::CommandBuffer&& commandBuffer);
+    void beginRenderPass(vk::CommandBuffer& commandBuffer);
 
     void registerObserver(Observer* observer);
 
@@ -79,5 +80,4 @@ private:
     void createCommandBuffers();
     void createFences();
     void createSemaphores();
-    void recordCommands(vk::CommandBuffer& commandBuffer);
 };

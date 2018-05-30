@@ -62,7 +62,12 @@ void Core::acquire() {
     m_fences[m_imageIndex].wait();
     m_fences[m_imageIndex].reset();
 
-    recordCommands(*m_commandBuffer);
+    m_commandBuffer->reset(vk::CommandBufferResetFlags::None);
+
+    vk::CommandBufferBeginInfo beginInfo = {};
+    beginInfo.flags = vk::CommandBufferUsageFlags::OneTimeSubmit;
+
+    m_commandBuffer->begin(beginInfo);
 }
 
 vk::CommandBuffer& Core::getCommandBuffer() {
@@ -70,7 +75,6 @@ vk::CommandBuffer& Core::getCommandBuffer() {
 }
 
 void Core::present() {
-    m_commandBuffer->endRenderPass();
     m_commandBuffer->end();
 
     vk::SubmitInfo submitInfo = {};
@@ -438,14 +442,7 @@ void Core::createSemaphores() {
     m_RenderSem = std::make_unique<vk::Semaphore>(*m_device, info);
 }
 
-void Core::recordCommands(vk::CommandBuffer& commandBuffer) {
-    commandBuffer.reset(vk::CommandBufferResetFlags::None);
-
-    vk::CommandBufferBeginInfo beginInfo = {};
-    beginInfo.flags = vk::CommandBufferUsageFlags::OneTimeSubmit;
-    
-    commandBuffer.begin(beginInfo);
-
+void Core::beginRenderPass(vk::CommandBuffer& commandBuffer) {
     vk::RenderPassBeginInfo renderPassInfo = {};
     renderPassInfo.renderPass = m_renderPass.get();
     renderPassInfo.framebuffer = &m_framebuffers[m_imageIndex];
