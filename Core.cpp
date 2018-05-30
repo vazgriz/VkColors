@@ -10,7 +10,7 @@ const std::vector<std::string> deviceExtensions = {
     "VK_KHR_swapchain"
 };
 
-Core::Core(GLFWwindow* window, int width, int height) {
+Core::Core(GLFWwindow* window) {
     m_window = window;
 
     createInstance();

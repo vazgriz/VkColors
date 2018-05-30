@@ -5,7 +5,7 @@
 
 class Core {
 public:
-    Core(GLFWwindow* window, int width, int height);
+    Core(GLFWwindow* window);
     Core(const Core& other) = delete;
     Core& operator = (const Core& other) = delete;
     Core(Core&& other);

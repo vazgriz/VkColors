@@ -15,7 +15,7 @@ int main() {
     glfwWindowHint(GLFW_VISIBLE, 0);
     GLFWwindow* window = glfwCreateWindow(800, 600, "Colors", nullptr, nullptr);
 
-    Core core = Core(window, 800, 600);
+    Core core = Core(window);
     Allocator allocator = Allocator(core);
     Renderer renderer = Renderer(core, allocator, 2048, 1024);
 
