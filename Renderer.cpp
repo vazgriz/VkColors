@@ -32,7 +32,7 @@ struct Vertex {
     }
 };
 
-Renderer::Renderer(Core& core, Allocator& allocator, int32_t width, int32_t height) {
+Renderer::Renderer(Core& core, Allocator& allocator, int32_t width, int32_t height) : bitmap(width, height) {
     m_core = &core;
     m_allocator = &allocator;
     m_width = width;
@@ -44,7 +44,6 @@ Renderer::Renderer(Core& core, Allocator& allocator, int32_t width, int32_t heig
     createIndexBuffer(commandBuffer);
     createTexture(commandBuffer);
 
-    m_allocator->flushStaging(commandBuffer);
     m_core->submitSingleUseCommandBuffer(std::move(commandBuffer));
 
     createTextureView();
@@ -58,7 +57,7 @@ Renderer::Renderer(Core& core, Allocator& allocator, int32_t width, int32_t heig
     projectionMatrix = glm::ortho(-wWidth / 2.0f, wWidth / 2.0f, -wHeight / 2.0f, wHeight / 2.0f, 0.0f, 1.0f);
 }
 
-Renderer::Renderer(Renderer&& other) {
+Renderer::Renderer(Renderer&& other) : bitmap(std::move(other.bitmap)) {
     *this = std::move(other);
 }
 
@@ -109,11 +108,64 @@ void Renderer::createIndexBuffer(vk::CommandBuffer& commandBuffer) {
 }
 
 void Renderer::createTexture(vk::CommandBuffer& commandBuffer) {
+    vk::ImageCreateInfo info = {};
+    info.extent.width = static_cast<uint32_t>(bitmap.width());
+    info.extent.height = static_cast<uint32_t>(bitmap.height());
+    info.extent.depth = 1;
+    info.format = vk::Format::R8G8B8A8_Unorm;
+    info.initialLayout = vk::ImageLayout::Undefined;
+    info.arrayLayers = 1;
+    info.mipLevels = 1;
+    info.imageType = vk::ImageType::_2D;
+    info.samples = vk::SampleCountFlags::_1;
+    info.usage = vk::ImageUsageFlags::Sampled | vk::ImageUsageFlags::TransferDst;
 
+    m_texture = std::make_unique<vk::Image>(m_core->device(), info);
+
+    m_textureAlloc = m_allocator->allocate(m_texture->requirements(), vk::MemoryPropertyFlags::DeviceLocal, vk::MemoryPropertyFlags::DeviceLocal);
+    m_texture->bind(*m_textureAlloc.memory, m_textureAlloc.offset);
+
+    vk::ImageMemoryBarrier barrier = {};
+    barrier.image = m_texture.get();
+    barrier.oldLayout = vk::ImageLayout::Undefined;
+    barrier.newLayout = vk::ImageLayout::TransferDstOptimal;
+    barrier.srcAccessMask = vk::AccessFlags::None;
+    barrier.dstAccessMask = vk::AccessFlags::TransferWrite;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.subresourceRange.aspectMask = vk::ImageAspectFlags::Color;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+
+    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::TopOfPipe, vk::PipelineStageFlags::Transfer, vk::DependencyFlags::None,
+        {}, {}, { barrier });
+
+    m_allocator->transfer(bitmap.data(), bitmap.size(), *m_texture, vk::ImageLayout::TransferDstOptimal);
+    m_allocator->flushStaging(commandBuffer);
+
+    barrier.oldLayout = vk::ImageLayout::TransferDstOptimal;
+    barrier.newLayout = vk::ImageLayout::ShaderReadOnlyOptimal;
+    barrier.srcAccessMask = vk::AccessFlags::TransferWrite;
+    barrier.dstAccessMask = vk::AccessFlags::ShaderRead;
+
+    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::Transfer, vk::PipelineStageFlags::FragmentShader, vk::DependencyFlags::None,
+        {}, {}, { barrier });
 }
 
 void Renderer::createTextureView() {
+    vk::ImageViewCreateInfo info = {};
+    info.image = m_texture.get();
+    info.format = m_texture->format();
+    info.viewType = vk::ImageViewType::_2D;
+    info.subresourceRange.aspectMask = vk::ImageAspectFlags::Color;
+    info.subresourceRange.baseArrayLayer = 0;
+    info.subresourceRange.layerCount = 1;
+    info.subresourceRange.baseMipLevel = 0;
+    info.subresourceRange.levelCount = 1;
 
+    m_textureView = std::make_unique<vk::ImageView>(m_core->device(), info);
 }
 
 void Renderer::createDescriptorPool() {
