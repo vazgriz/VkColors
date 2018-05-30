@@ -37,6 +37,7 @@ Renderer::Renderer(Core& core, Allocator& allocator, int32_t width, int32_t heig
     m_allocator = &allocator;
     m_width = width;
     m_height = height;
+    m_core->registerObserver(this);
 
     vk::CommandBuffer commandBuffer = m_core->getSingleUseCommandBuffer();
 
@@ -55,7 +56,7 @@ Renderer::Renderer(Core& core, Allocator& allocator, int32_t width, int32_t heig
 
     int32_t wWidth = static_cast<int32_t>(m_core->swapchain().extent().width);
     int32_t wHeight = static_cast<int32_t>(m_core->swapchain().extent().height);
-    projectionMatrix = glm::ortho(-wWidth / 2.0f, wWidth / 2.0f, -wHeight / 2.0f, wHeight / 2.0f, 0.0f, 1.0f);
+    onResize(wWidth, wHeight);
 }
 
 Renderer::Renderer(Renderer&& other) : bitmap(std::move(other.bitmap)) {
@@ -68,6 +69,10 @@ void Renderer::record(vk::CommandBuffer& commandBuffer) {
     commandBuffer.bindPipeline(vk::PipelineBindPoint::Graphics, *m_pipeline);
     commandBuffer.pushConstants(*m_pipelineLayout, vk::ShaderStageFlags::Vertex, 0, sizeof(glm::mat4), &projectionMatrix);
     commandBuffer.drawIndexed(6, 1, 0, 0, 0);
+}
+
+void Renderer::onResize(int width, int height) {
+    projectionMatrix = glm::ortho(-m_width / 2.0f, m_width / 2.0f, -m_height / 2.0f, m_height / 2.0f, 0.0f, 1.0f);
 }
 
 void Renderer::createVertexBuffer(vk::CommandBuffer& commandBuffer) {

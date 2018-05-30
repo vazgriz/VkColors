@@ -5,7 +5,7 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 
-class Renderer {
+class Renderer : public Observer {
 public:
     Renderer(Core& core, Allocator& allocator, int32_t width, int32_t height);
     Renderer(const Renderer& other) = delete;
@@ -14,6 +14,8 @@ public:
     Renderer& operator = (Renderer&& other) = default;
 
     void record(vk::CommandBuffer& commandBuffer);
+
+    void onResize(int width, int height);
 
 private:
     Core* m_core;

@@ -3,6 +3,11 @@
 #include <GLFW/glfw3.h>
 #include <memory>
 
+class Observer {
+public:
+    virtual void onResize(int width, int height) = 0;
+};
+
 class Core {
 public:
     Core(GLFWwindow* window);
@@ -18,6 +23,8 @@ public:
     vk::CommandBuffer getSingleUseCommandBuffer();
     void submitSingleUseCommandBuffer(vk::CommandBuffer&& commandBuffer);
 
+    void registerObserver(Observer* observer);
+
     vk::Device& device() { return *m_device; }
     vk::Swapchain& swapchain() { return *m_swapchain; }
     vk::RenderPass& renderPass() { return *m_renderPass; }
@@ -27,6 +34,7 @@ private:
     int m_width;
     int m_height;
     bool resizeFlag = false;
+    std::vector<Observer*> m_observers;
     std::unique_ptr<vk::Instance> m_instance;
     const vk::PhysicalDevice* m_physicalDevice = nullptr;
     std::unique_ptr<vk::Surface> m_surface;

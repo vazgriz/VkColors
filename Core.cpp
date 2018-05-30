@@ -24,6 +24,7 @@ Core::Core(GLFWwindow* window) {
     glfwSetWindowUserPointer(window, this);
     glfwSetWindowSizeCallback(window, &ResizeWindow);
     ResizeWindow(window, 0, 0);
+    resizeFlag = false;
 }
 
 Core::Core(Core&& other) {
@@ -39,6 +40,14 @@ void Core::ResizeWindow(GLFWwindow* window, int width, int height) {
     core->m_width = fbWidth;
     core->m_height = fbHeight;
     core->resizeFlag = true;
+
+    for (auto observer : core->m_observers) {
+        observer->onResize(fbWidth, fbHeight);
+    }
+}
+
+void Core::registerObserver(Observer* observer) {
+    m_observers.push_back(observer);
 }
 
 void Core::acquire() {
