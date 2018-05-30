@@ -39,6 +39,14 @@ Renderer::Renderer(Core& core, Allocator& allocator, int32_t width, int32_t heig
     m_height = height;
     m_core->registerObserver(this);
 
+    for (size_t x = 0; x < bitmap.width(); x++) {
+        for (size_t y = 0; y < bitmap.height(); y++) {
+            if ((x ^ y) % 2 == 0) {
+                bitmap.getPixel(x, y) = { 255, 0, 0, 0 };
+            }
+        }
+    }
+
     vk::CommandBuffer commandBuffer = m_core->getSingleUseCommandBuffer();
 
     createVertexBuffer(commandBuffer);
@@ -49,6 +57,7 @@ Renderer::Renderer(Core& core, Allocator& allocator, int32_t width, int32_t heig
 
     createTextureView();
     createSampler();
+    createDescriptorLayout();
     createDescriptorPool();
     createDescriptorSet();
     createPipelineLayout();
@@ -66,21 +75,25 @@ Renderer::Renderer(Renderer&& other) : bitmap(std::move(other.bitmap)) {
 void Renderer::record(vk::CommandBuffer& commandBuffer) {
     commandBuffer.bindVertexBuffers(0, { *m_vertexBuffer }, { 0 });
     commandBuffer.bindIndexBuffer(*m_indexBuffer, 0, vk::IndexType::Uint32);
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::Graphics, *m_pipelineLayout, 0, { *m_descriptorSet }, {});
     commandBuffer.bindPipeline(vk::PipelineBindPoint::Graphics, *m_pipeline);
     commandBuffer.pushConstants(*m_pipelineLayout, vk::ShaderStageFlags::Vertex, 0, sizeof(glm::mat4), &projectionMatrix);
     commandBuffer.drawIndexed(6, 1, 0, 0, 0);
 }
 
 void Renderer::onResize(int width, int height) {
-    projectionMatrix = glm::ortho(-m_width / 2.0f, m_width / 2.0f, -m_height / 2.0f, m_height / 2.0f, 0.0f, 1.0f);
+    projectionMatrix = glm::ortho<float>(-width / 2.0f, width / 2.0f, -height / 2.0f, height / 2.0f, 0, 1);
+    if (m_pipeline != nullptr) {
+        createPipeline();
+    }
 }
 
 void Renderer::createVertexBuffer(vk::CommandBuffer& commandBuffer) {
     std::vector<Vertex> vertices = {
         { { -m_width / 2, -m_height / 2, 0 }, { 0, 0 } },
-        { {  m_width / 2, -m_height / 2, 0 }, { 0, 0 } },
-        { { -m_width / 2,  m_height / 2, 0 }, { 0, 0 } },
-        { {  m_width / 2,  m_height / 2, 0 }, { 0, 0 } },
+        { {  m_width / 2, -m_height / 2, 0 }, { 1, 0 } },
+        { { -m_width / 2,  m_height / 2, 0 }, { 0, 1 } },
+        { {  m_width / 2,  m_height / 2, 0 }, { 1, 1 } },
     };
 
     vk::BufferCreateInfo info = {};
@@ -186,12 +199,49 @@ void Renderer::createSampler() {
     m_sampler = std::make_unique<vk::Sampler>(m_core->device(), info);
 }
 
-void Renderer::createDescriptorPool() {
+void Renderer::createDescriptorLayout() {
+    vk::DescriptorSetLayoutBinding binding = {};
+    binding.binding = 0;
+    binding.descriptorCount = 1;
+    binding.descriptorType = vk::DescriptorType::CombinedImageSampler;
+    binding.stageFlags = vk::ShaderStageFlags::Fragment;
 
+    vk::DescriptorSetLayoutCreateInfo info = {};
+    info.bindings = { binding };
+
+    m_descriptorLayout = std::make_unique<vk::DescriptorSetLayout>(m_core->device(), info);
+}
+
+void Renderer::createDescriptorPool() {
+    vk::DescriptorPoolSize poolSize = {};
+    poolSize.descriptorCount = 1;
+    poolSize.type = vk::DescriptorType::CombinedImageSampler;
+
+    vk::DescriptorPoolCreateInfo info = {};
+    info.maxSets = 1;
+    info.poolSizes = { poolSize };
+    
+    m_descriptorPool = std::make_unique<vk::DescriptorPool>(m_core->device(), info);
 }
 
 void Renderer::createDescriptorSet() {
+    vk::DescriptorSetAllocateInfo info = {};
+    info.descriptorPool = m_descriptorPool.get();
+    info.setLayouts = { *m_descriptorLayout };
+    
+    m_descriptorSet = std::make_unique<vk::DescriptorSet>(std::move(m_descriptorPool->allocate(info)[0]));
 
+    vk::DescriptorImageInfo imageInfo = {};
+    imageInfo.sampler = m_sampler.get();
+    imageInfo.imageView = m_textureView.get();
+    imageInfo.imageLayout = vk::ImageLayout::ShaderReadOnlyOptimal;
+
+    vk::WriteDescriptorSet write = {};
+    write.dstSet = m_descriptorSet.get();
+    write.descriptorType = vk::DescriptorType::CombinedImageSampler;
+    write.imageInfo = { imageInfo };
+
+    vk::DescriptorSet::update(m_core->device(), { write }, {});
 }
 
 void Renderer::createPipelineLayout() {
@@ -201,6 +251,7 @@ void Renderer::createPipelineLayout() {
 
     vk::PipelineLayoutCreateInfo info = {};
     info.pushConstantRanges = { range };
+    info.setLayouts = { *m_descriptorLayout };
     
     m_pipelineLayout = std::make_unique<vk::PipelineLayout>(m_core->device(), info);
 }
