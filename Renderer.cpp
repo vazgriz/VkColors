@@ -41,8 +41,8 @@ Renderer::Renderer(Core& core, Allocator& allocator, int32_t width, int32_t heig
 
     for (size_t x = 0; x < bitmap.width(); x++) {
         for (size_t y = 0; y < bitmap.height(); y++) {
-            if ((x ^ y) % 2 == 0) {
-                bitmap.getPixel(x, y) = { 255, 0, 0, 0 };
+            if (((x / 8) + (y / 8)) % 2 == 0) {
+                bitmap.getPixel(x, y) = { 255, 255, 255, 0 };
             }
         }
     }
