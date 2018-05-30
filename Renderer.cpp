@@ -227,14 +227,14 @@ void Renderer::createPipeline() {
     inputAssembly.topology = vk::PrimitiveTopology::TriangleList;
 
     vk::Viewport viewport = {};
-    viewport.width = static_cast<float>(m_width);
-    viewport.height = static_cast<float>(m_height);
+    viewport.width = static_cast<float>(m_core->swapchain().extent().width);
+    viewport.height = static_cast<float>(m_core->swapchain().extent().height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
     vk::Rect2D scissor = {};
     scissor.offset = { 0, 0 };
-    scissor.extent = { static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height) };
+    scissor.extent = m_core->swapchain().extent();
 
     vk::PipelineViewportStateCreateInfo viewportState = {};
     viewportState.viewports = { viewport };
