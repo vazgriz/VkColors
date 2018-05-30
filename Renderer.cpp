@@ -32,20 +32,13 @@ struct Vertex {
     }
 };
 
-Renderer::Renderer(Core& core, Allocator& allocator, int32_t width, int32_t height) : m_bitmap(width, height) {
+Renderer::Renderer(Core& core, Allocator& allocator, Bitmap& bitmap) {
     m_core = &core;
     m_allocator = &allocator;
-    m_width = width;
-    m_height = height;
+    m_bitmap = &bitmap;
+    m_width = static_cast<int32_t>(m_bitmap->width());
+    m_height = static_cast<int32_t>(m_bitmap->height());
     m_core->registerObserver(this);
-
-    for (size_t x = 0; x < m_bitmap.width(); x++) {
-        for (size_t y = 0; y < m_bitmap.height(); y++) {
-            if (((x / 8) + (y / 8)) % 2 == 0) {
-                m_bitmap.getPixel(x, y) = { 255, 255, 255, 0 };
-            }
-        }
-    }
 
     vk::CommandBuffer commandBuffer = m_core->getSingleUseCommandBuffer();
 
@@ -68,7 +61,7 @@ Renderer::Renderer(Core& core, Allocator& allocator, int32_t width, int32_t heig
     onResize(wWidth, wHeight);
 }
 
-Renderer::Renderer(Renderer&& other) : m_bitmap(std::move(other.m_bitmap)) {
+Renderer::Renderer(Renderer&& other) {
     *this = std::move(other);
 }
 
@@ -128,8 +121,8 @@ void Renderer::createIndexBuffer(vk::CommandBuffer& commandBuffer) {
 
 void Renderer::createTexture(vk::CommandBuffer& commandBuffer) {
     vk::ImageCreateInfo info = {};
-    info.extent.width = static_cast<uint32_t>(m_bitmap.width());
-    info.extent.height = static_cast<uint32_t>(m_bitmap.height());
+    info.extent.width = static_cast<uint32_t>(m_bitmap->width());
+    info.extent.height = static_cast<uint32_t>(m_bitmap->height());
     info.extent.depth = 1;
     info.format = vk::Format::R8G8B8A8_Unorm;
     info.initialLayout = vk::ImageLayout::Undefined;
@@ -161,7 +154,7 @@ void Renderer::createTexture(vk::CommandBuffer& commandBuffer) {
     commandBuffer.pipelineBarrier(vk::PipelineStageFlags::TopOfPipe, vk::PipelineStageFlags::Transfer, vk::DependencyFlags::None,
         {}, {}, { barrier });
 
-    m_allocator->transfer(m_bitmap.data(), m_bitmap.size(), *m_texture, vk::ImageLayout::TransferDstOptimal);
+    m_allocator->transfer(m_bitmap->data(), m_bitmap->size(), *m_texture, vk::ImageLayout::TransferDstOptimal);
     m_allocator->flushStaging(commandBuffer);
 
     barrier.oldLayout = vk::ImageLayout::TransferDstOptimal;

@@ -18,7 +18,17 @@ int main() {
 
     Core core = Core(window);
     Allocator allocator = Allocator(core);
-    Renderer renderer = Renderer(core, allocator, 2048, 1024);
+    Bitmap bitmap = Bitmap(2048, 1024);
+
+    for (size_t x = 0; x < bitmap.width(); x++) {
+        for (size_t y = 0; y < bitmap.height(); y++) {
+            if (((x / 8) + (y / 8)) % 2 == 0) {
+                bitmap.getPixel(x, y) = { 255, 255, 255, 0 };
+            }
+        }
+    }
+
+    Renderer renderer = Renderer(core, allocator, bitmap);
     ShuffleSource source = ShuffleSource(5);
 
     size_t frames = 0;

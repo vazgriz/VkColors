@@ -7,7 +7,7 @@
 
 class Renderer : public Observer {
 public:
-    Renderer(Core& core, Allocator& allocator, int32_t width, int32_t height);
+    Renderer(Core& core, Allocator& allocator, Bitmap& bitmap);
     Renderer(const Renderer& other) = delete;
     Renderer& operator = (const Renderer& other) = delete;
     Renderer(Renderer&& other);
@@ -20,6 +20,7 @@ public:
 private:
     Core* m_core;
     Allocator* m_allocator;
+    Bitmap* m_bitmap;
     int32_t m_width;
     int32_t m_height;
     std::unique_ptr<vk::Buffer> m_vertexBuffer;
@@ -36,7 +37,6 @@ private:
     std::unique_ptr<vk::PipelineLayout> m_pipelineLayout;
     std::unique_ptr<vk::Pipeline> m_pipeline;
     glm::mat4 m_projectionMatrix;
-    Bitmap m_bitmap;
 
     void createVertexBuffer(vk::CommandBuffer& commandBuffer);
     void createIndexBuffer(vk::CommandBuffer& commandBuffer);
