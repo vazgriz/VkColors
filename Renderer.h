@@ -35,8 +35,8 @@ private:
     std::unique_ptr<vk::DescriptorSet> m_descriptorSet;
     std::unique_ptr<vk::PipelineLayout> m_pipelineLayout;
     std::unique_ptr<vk::Pipeline> m_pipeline;
-    glm::mat4 projectionMatrix;
-    Bitmap bitmap;
+    glm::mat4 m_projectionMatrix;
+    Bitmap m_bitmap;
 
     void createVertexBuffer(vk::CommandBuffer& commandBuffer);
     void createIndexBuffer(vk::CommandBuffer& commandBuffer);
