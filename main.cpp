@@ -6,6 +6,7 @@
 #include "Core.h"
 #include "Allocator.h"
 #include "Renderer.h"
+#include "ShuffleSource.h"
 
 int main() {
     auto last = std::chrono::system_clock::now();
@@ -18,6 +19,7 @@ int main() {
     Core core = Core(window);
     Allocator allocator = Allocator(core);
     Renderer renderer = Renderer(core, allocator, 2048, 1024);
+    ShuffleSource source = ShuffleSource(5);
 
     size_t frames = 0;
 
