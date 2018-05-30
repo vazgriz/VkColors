@@ -109,13 +109,31 @@ void Allocator::transfer(void* data, size_t size, vk::Buffer& dstBuffer) {
     m_stagingMemory->ptr = offset + size;
 }
 
+void Allocator::transfer(void* data, size_t size, vk::Image& dstImage, vk::ImageLayout imageLayout) {
+    size_t offset = align(m_stagingMemory->ptr, 4);
+    memcpy(static_cast<char*>(m_stagingMapping) + offset, data, size);
+    m_stagingData.emplace_back(StagingData{ offset, size, nullptr, &dstImage, imageLayout });
+    m_stagingMemory->ptr = offset + size;
+}
+
 void Allocator::flushStaging(vk::CommandBuffer& commandBuffer) {
     for (auto& transfer : m_stagingData) {
-        vk::BufferCopy copy = {};
-        copy.size = transfer.size;
-        copy.srcOffset = transfer.offset;
+        if (transfer.dstBuffer != nullptr) {
+            vk::BufferCopy copy = {};
+            copy.size = transfer.size;
+            copy.srcOffset = transfer.offset;
 
-        commandBuffer.copyBuffer(*m_stagingBuffer, *transfer.dstBuffer, copy);
+            commandBuffer.copyBuffer(*m_stagingBuffer, *transfer.dstBuffer, copy);
+        } else if (transfer.dstImage != nullptr) {
+            vk::BufferImageCopy copy = {};
+            copy.imageExtent = transfer.dstImage->extent();
+            copy.imageSubresource.aspectMask = vk::ImageAspectFlags::Color;
+            copy.imageSubresource.baseArrayLayer = 0;
+            copy.imageSubresource.layerCount = 1;
+            copy.imageSubresource.mipLevel = 0;
+
+            commandBuffer.copyBufferToImage(*m_stagingBuffer, *transfer.dstImage, transfer.imageLayout, { copy });
+        }
     }
 
     m_stagingData.clear();

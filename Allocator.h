@@ -19,6 +19,8 @@ struct StagingData {
     size_t offset;
     size_t size;
     vk::Buffer* dstBuffer;
+    vk::Image* dstImage;
+    vk::ImageLayout imageLayout;
 };
 
 class Allocator {
@@ -31,6 +33,7 @@ public:
 
     Allocation allocate(vk::MemoryRequirements requirements, vk::MemoryPropertyFlags preferred, vk::MemoryPropertyFlags required);
     void transfer(void* data, size_t size, vk::Buffer& dstBuffer);
+    void transfer(void* data, size_t size, vk::Image& dstImage, vk::ImageLayout imageLayout);
     void flushStaging(vk::CommandBuffer& commandBuffer);
 
 private:
