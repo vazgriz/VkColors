@@ -47,6 +47,7 @@ Renderer::Renderer(Core& core, Allocator& allocator, int32_t width, int32_t heig
     m_core->submitSingleUseCommandBuffer(std::move(commandBuffer));
 
     createTextureView();
+    createSampler();
     createDescriptorPool();
     createDescriptorSet();
     createPipelineLayout();
@@ -166,6 +167,18 @@ void Renderer::createTextureView() {
     info.subresourceRange.levelCount = 1;
 
     m_textureView = std::make_unique<vk::ImageView>(m_core->device(), info);
+}
+
+void Renderer::createSampler() {
+    vk::SamplerCreateInfo info = {};
+    info.addressModeU = vk::SamplerAddressMode::Repeat;
+    info.addressModeV = vk::SamplerAddressMode::Repeat;
+    info.addressModeW = vk::SamplerAddressMode::Repeat;
+    info.magFilter = vk::Filter::Nearest;
+    info.minFilter = vk::Filter::Nearest;
+    info.maxAnisotropy = 1;
+    
+    m_sampler = std::make_unique<vk::Sampler>(m_core->device(), info);
 }
 
 void Renderer::createDescriptorPool() {

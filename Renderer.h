@@ -27,6 +27,7 @@ private:
     std::unique_ptr<vk::Image> m_texture;
     Allocation m_textureAlloc;
     std::unique_ptr<vk::ImageView> m_textureView;
+    std::unique_ptr<vk::Sampler> m_sampler;
     std::unique_ptr<vk::DescriptorPool> m_descriptorPool;
     std::unique_ptr<vk::DescriptorSet> m_descriptorSet;
     std::unique_ptr<vk::PipelineLayout> m_pipelineLayout;
@@ -38,6 +39,7 @@ private:
     void createIndexBuffer(vk::CommandBuffer& commandBuffer);
     void createTexture(vk::CommandBuffer& commandBuffer);
     void createTextureView();
+    void createSampler();
     void createDescriptorPool();
     void createDescriptorSet();
     void createPipelineLayout();
