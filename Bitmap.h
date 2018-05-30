@@ -10,6 +10,7 @@ struct Color32 {
 };
 
 class Bitmap {
+public:
     Bitmap(size_t width, size_t height);
     Bitmap(const Bitmap& other) = delete;
     Bitmap& operator = (const Bitmap& other) = delete;
