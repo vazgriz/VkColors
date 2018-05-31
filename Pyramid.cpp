@@ -3,7 +3,7 @@
 
 #define ELEMENT_SIZE 8
 //struct {
-//    uint color;
+//    uint index;
 //    uint score;
 //}
 

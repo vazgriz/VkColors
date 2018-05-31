@@ -12,7 +12,7 @@ vec4 toVec4(uint color) {
 }
 
 struct Element {
-    uint color;
+    uint index;
     uint score;
 };
 
