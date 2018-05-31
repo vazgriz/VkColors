@@ -7,6 +7,7 @@
 #include "Allocator.h"
 #include "Renderer.h"
 #include "ShuffleSource.h"
+#include "Pyramid.h"
 
 int main() {
     auto last = std::chrono::system_clock::now();
@@ -30,6 +31,7 @@ int main() {
 
     Renderer renderer = Renderer(core, allocator, bitmap);
     ShuffleSource source = ShuffleSource(5);
+    Pyramid pyramid = Pyramid(core, allocator);
 
     size_t frames = 0;
 

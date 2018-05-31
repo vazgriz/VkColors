@@ -29,7 +29,7 @@ add_custom_target(
     DEPENDS ${SPIRV_BINARY_FILES}
 )
 
-add_executable(VkColors main.cpp core.cpp bitmap.cpp allocator.cpp utilities.cpp renderer.cpp shufflesource.cpp)
+add_executable(VkColors main.cpp core.cpp bitmap.cpp allocator.cpp utilities.cpp renderer.cpp shufflesource.cpp pyramid.cpp)
 target_include_directories(VkColors PUBLIC ${GLFW_INCLUDE} ${VULKAN_INCLUDE} ${VKW_INCLUDE} ${GLM_INCLUDE})
 target_link_libraries(VkColors ${GLFW_LIB} ${VULKAN_LIB} ${VKW_LIB})
 add_dependencies(VkColors Shaders)
