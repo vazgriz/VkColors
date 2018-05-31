@@ -2,6 +2,7 @@
 #include <VulkanWrapper/VulkanWrapper.h>
 #include <GLFW/glfw3.h>
 #include <memory>
+#include <mutex>
 
 class Observer {
 public:
@@ -24,6 +25,8 @@ public:
     void submitSingleUseCommandBuffer(vk::CommandBuffer&& commandBuffer);
     void beginRenderPass(vk::CommandBuffer& commandBuffer);
 
+    void submitCompute(vk::CommandBuffer& commandBuffer, vk::Fence* fence);
+
     void registerObserver(Observer* observer);
 
     vk::Device& device() { return *m_device; }
@@ -35,6 +38,7 @@ private:
     int m_width;
     int m_height;
     bool resizeFlag = false;
+    bool m_sharedQueue;
     std::vector<Observer*> m_observers;
     std::unique_ptr<vk::Instance> m_instance;
     const vk::PhysicalDevice* m_physicalDevice = nullptr;
@@ -55,6 +59,7 @@ private:
     std::vector<vk::Fence> m_fences;
     std::unique_ptr<vk::Semaphore> m_acquireSem;
     std::unique_ptr<vk::Semaphore> m_RenderSem;
+    std::unique_ptr<std::mutex> m_queueMutex;
 
     uint32_t m_imageIndex;
     vk::CommandBuffer* m_commandBuffer;

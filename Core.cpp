@@ -25,6 +25,7 @@ Core::Core(GLFWwindow* window) {
     glfwSetWindowSizeCallback(window, &ResizeWindow);
     ResizeWindow(window, 0, 0);
     resizeFlag = false;
+    m_queueMutex = std::make_unique<std::mutex>();
 }
 
 Core::Core(Core&& other) {
@@ -83,7 +84,12 @@ void Core::present() {
     submitInfo.waitDstStageMask = { vk::PipelineStageFlags::ColorAttachmentOutput };
     submitInfo.signalSemaphores = { *m_RenderSem };
 
-    m_graphicsQueue->submit({ submitInfo }, &m_fences[m_imageIndex]);
+    if (m_sharedQueue) {
+        std::lock_guard<std::mutex> lock(*m_queueMutex);
+        m_graphicsQueue->submit({ submitInfo }, &m_fences[m_imageIndex]);
+    } else {
+        m_graphicsQueue->submit({ submitInfo }, &m_fences[m_imageIndex]);
+    }
 
     vk::PresentInfo presentInfo = {};
     presentInfo.imageIndices = { m_imageIndex };
@@ -114,8 +120,25 @@ void Core::submitSingleUseCommandBuffer(vk::CommandBuffer&& commandBuffer) {
     vk::SubmitInfo info = {};
     info.commandBuffers = { commandBuffer };
     
-    m_graphicsQueue->submit({ info }, nullptr);
+    if (m_sharedQueue) {
+        std::lock_guard<std::mutex> lock(*m_queueMutex);
+        m_graphicsQueue->submit({ info }, nullptr);
+    } else {
+        m_graphicsQueue->submit({ info }, nullptr);
+    }
     m_graphicsQueue->waitIdle();
+}
+
+void Core::submitCompute(vk::CommandBuffer& commandBuffer, vk::Fence* fence) {
+    vk::SubmitInfo info = {};
+    info.commandBuffers = { commandBuffer };
+    
+    if (m_sharedQueue) {
+        std::lock_guard<std::mutex> lock(*m_queueMutex);
+        m_computeQueue->submit({ info }, fence);
+    } else {
+        m_computeQueue->submit({ info }, fence);
+    }
 }
 
 void Core::createInstance() {
@@ -217,8 +240,14 @@ void Core::createDevice() {
     std::vector<vk::DeviceQueueCreateInfo> queueInfos;
 
     bool sharedFamily = false;
-    if (m_graphicsQueueIndex == m_computeQueueIndex && m_physicalDevice->queueFamilies()[m_graphicsQueueIndex].queueCount > 1) {
-        sharedFamily = true;
+    m_sharedQueue = false;
+
+    if (m_graphicsQueueIndex == m_computeQueueIndex) {
+        if (m_physicalDevice->queueFamilies()[m_graphicsQueueIndex].queueCount > 1) {
+            sharedFamily = true;
+        } else {
+            m_sharedQueue = true;
+        }
     }
 
     for (auto i : indices) {
