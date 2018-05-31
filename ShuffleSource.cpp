@@ -20,9 +20,9 @@ ShuffleSource::ShuffleSource(size_t bitDepth) {
 
     //fisher yates shuffle
     std::default_random_engine random;
-    std::uniform_int_distribution<size_t> dist(0, m_colors.size() - 1);
 
     for (size_t i = m_colors.size() - 1; i >= 1; i--) {
+        std::uniform_int_distribution<size_t> dist(0, i);
         size_t j = dist(random);
         std::swap(m_colors[i], m_colors[j]);
     }
