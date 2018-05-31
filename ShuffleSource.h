@@ -1,6 +1,6 @@
 #include "ColorSource.h"
 
-class ShuffleSource : ColorSource {
+class ShuffleSource : public ColorSource {
 public:
     ShuffleSource(size_t bitDepth);
     ShuffleSource(const ShuffleSource& other) = delete;
