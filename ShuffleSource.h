@@ -8,6 +8,7 @@ public:
     ShuffleSource(ShuffleSource&& other);
     ShuffleSource& operator = (ShuffleSource&& other) = default;
 
+    bool hasNext();
     Color32 getNext();
 
 private:

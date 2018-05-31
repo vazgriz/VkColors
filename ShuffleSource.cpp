@@ -32,6 +32,10 @@ ShuffleSource::ShuffleSource(ShuffleSource&& other) {
     *this = std::move(other);
 }
 
+bool ShuffleSource::hasNext() {
+    return m_index < m_colors.size();
+}
+
 Color32 ShuffleSource::getNext() {
     auto result = m_colors[m_index];
     m_index++;
