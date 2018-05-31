@@ -55,10 +55,10 @@ void Pyramid::createDescriptorSet() {
 }
 
 void Pyramid::createBuffers(size_t levels) {
-    for (size_t i = m_buffers.size(); i < levels; i++) {
+    for (size_t i = 0; i < levels; i++) {
         vk::BufferCreateInfo info = {};
         info.usage = vk::BufferUsageFlags::StorageBuffer;
-        info.size = static_cast<vk::DeviceSize>(pow(2, i)) * 8;
+        info.size = static_cast<vk::DeviceSize>(pow(2, i + 1)) * 8;
         
         vk::Buffer buffer = vk::Buffer(m_core->device(), info);
         Allocation alloc = m_allocator->allocate(buffer.requirements(), vk::MemoryPropertyFlags::DeviceLocal, vk::MemoryPropertyFlags::DeviceLocal);
