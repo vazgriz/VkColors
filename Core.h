@@ -33,6 +33,8 @@ public:
     vk::Swapchain& swapchain() { return *m_swapchain; }
     vk::RenderPass& renderPass() { return *m_renderPass; }
 
+    uint32_t computeQueueFamilyIndex() { return m_computeQueueIndex; }
+
 private:
     GLFWwindow* m_window;
     int m_width;
