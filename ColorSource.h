@@ -1,3 +1,4 @@
+#pragma once
 #include "Bitmap.h"
 
 class ColorSource {
