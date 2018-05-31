@@ -11,7 +11,11 @@ set(VKW_LIB)
 set(GLM_INCLUDE)
 set(GLSL_VALIDATOR)
 
-set(SHADER_SOURCES "${PROJECT_SOURCE_DIR}/shaders/shader.vert" ; "${PROJECT_SOURCE_DIR}/shaders/shader.frag")
+set(SHADER_SOURCES
+    "${PROJECT_SOURCE_DIR}/shaders/shader.vert" ;
+    "${PROJECT_SOURCE_DIR}/shaders/shader.frag" ;
+    "${PROJECT_SOURCE_DIR}/shaders/wave.comp"
+)
 set(SPIRV_BINARY_FILES)
 
 foreach(SHADER_SOURCE ${SHADER_SOURCES})
@@ -29,7 +33,7 @@ add_custom_target(
     DEPENDS ${SPIRV_BINARY_FILES}
 )
 
-add_executable(VkColors main.cpp core.cpp bitmap.cpp allocator.cpp utilities.cpp renderer.cpp shufflesource.cpp pyramid.cpp)
+add_executable(VkColors main.cpp core.cpp bitmap.cpp allocator.cpp utilities.cpp renderer.cpp shufflesource.cpp pyramid.cpp generator.cpp)
 target_include_directories(VkColors PUBLIC ${GLFW_INCLUDE} ${VULKAN_INCLUDE} ${VKW_INCLUDE} ${GLM_INCLUDE})
 target_link_libraries(VkColors ${GLFW_LIB} ${VULKAN_LIB} ${VKW_LIB})
 add_dependencies(VkColors Shaders)
