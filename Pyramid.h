@@ -11,6 +11,7 @@ public:
     Pyramid& operator = (Pyramid&& other) = default;
 
     vk::DescriptorSetLayout& descriptorSetLayout() { return *m_descriptorSetLayout; }
+    vk::DescriptorSet& descriptorSet() { return *m_descriptorSet; }
 
 private:
     Core* m_core;
