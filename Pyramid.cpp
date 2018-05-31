@@ -27,6 +27,7 @@ void Pyramid::createDescriptorSetLayout() {
     binding.binding = 0;
     binding.descriptorType = vk::DescriptorType::StorageBuffer;
     binding.descriptorCount = 24;
+    binding.stageFlags = vk::ShaderStageFlags::Compute;
 
     vk::DescriptorSetLayoutCreateInfo info = {};
     info.bindings = { binding };
