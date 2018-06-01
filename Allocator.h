@@ -32,20 +32,12 @@ public:
     Allocator& operator = (Allocator&& other) = default;
 
     Allocation allocate(vk::MemoryRequirements requirements, vk::MemoryPropertyFlags preferred, vk::MemoryPropertyFlags required);
-    void transfer(void* data, size_t size, vk::Buffer& dstBuffer);
-    void transfer(void* data, size_t size, vk::Image& dstImage, vk::ImageLayout imageLayout);
-    void flushStaging(vk::CommandBuffer& commandBuffer);
 
 private:
     Core* m_core;
     vk::MemoryProperties m_properties;
     std::vector<std::vector<Page>> m_pages;
-    std::unique_ptr<vk::Buffer> m_stagingBuffer;
-    Page* m_stagingMemory;
-    void* m_stagingMapping;
-    std::vector<StagingData> m_stagingData;
 
     Allocation tryAlloc(uint32_t type, vk::MemoryRequirements requirements);
     Page* allocNewPage(uint32_t type, size_t size);
-    void createStagingMemory();
 };
