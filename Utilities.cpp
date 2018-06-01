@@ -23,3 +23,12 @@ vk::ShaderModule loadShader(vk::Device& device, const std::string& path) {
     
     return vk::ShaderModule(device, info);
 }
+
+size_t align(size_t ptr, size_t align) {
+    size_t unalign = ptr % align;
+    if (unalign != 0) {
+        return ptr + (align - unalign);
+    } else {
+        return ptr;
+    }
+}

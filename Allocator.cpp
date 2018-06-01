@@ -1,4 +1,5 @@
 #include "Allocator.h"
+#include "Utilities.h"
 
 Allocator::Allocator(Core& core) {
     m_core = &core;
@@ -10,15 +11,6 @@ Allocator::Allocator(Core& core) {
 
 Allocator::Allocator(Allocator&& other) {
     *this = std::move(other);
-}
-
-size_t Allocator::align(size_t ptr, size_t align) {
-    size_t unalign = ptr % align;
-    if (unalign != 0) {
-        return ptr + (align - unalign);
-    } else {
-        return ptr;
-    }
 }
 
 Page* Allocator::allocNewPage(uint32_t type, size_t size) {

@@ -45,7 +45,6 @@ private:
     void* m_stagingMapping;
     std::vector<StagingData> m_stagingData;
 
-    size_t align(size_t ptr, size_t align);
     Allocation tryAlloc(uint32_t type, vk::MemoryRequirements requirements);
     Page* allocNewPage(uint32_t type, size_t size);
     void createStagingMemory();
