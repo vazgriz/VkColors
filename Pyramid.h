@@ -12,6 +12,7 @@ public:
 
     vk::DescriptorSetLayout& descriptorSetLayout() { return *m_descriptorSetLayout; }
     vk::DescriptorSet& descriptorSet() { return *m_descriptorSet; }
+    std::vector<vk::Buffer>& buffers() { return m_buffers; }
 
 private:
     Core* m_core;
