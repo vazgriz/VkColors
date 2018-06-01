@@ -60,6 +60,7 @@ void Pyramid::createBuffers(size_t levels) {
         vk::BufferCreateInfo info = {};
         info.usage = vk::BufferUsageFlags::StorageBuffer;
         info.size = static_cast<vk::DeviceSize>(pow(2, i + 1)) * 8;
+        if (i == 0) info.usage |= vk::BufferUsageFlags::TransferSrc;
         
         vk::Buffer buffer = vk::Buffer(m_core->device(), info);
         Allocation alloc = m_allocator->allocate(buffer.requirements(), vk::MemoryPropertyFlags::DeviceLocal, vk::MemoryPropertyFlags::DeviceLocal);
