@@ -2,6 +2,7 @@
 #include "Core.h"
 #include "Allocator.h"
 #include "Bitmap.h"
+#include "Staging.h"
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 
@@ -21,6 +22,7 @@ private:
     Core* m_core;
     Allocator* m_allocator;
     Bitmap* m_bitmap;
+    Staging m_staging;
     int32_t m_width;
     int32_t m_height;
     std::unique_ptr<vk::Buffer> m_vertexBuffer;

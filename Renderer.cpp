@@ -32,7 +32,7 @@ struct Vertex {
     }
 };
 
-Renderer::Renderer(Core& core, Allocator& allocator, Bitmap& bitmap) {
+Renderer::Renderer(Core& core, Allocator& allocator, Bitmap& bitmap) : m_staging(core, allocator) {
     m_core = &core;
     m_allocator = &allocator;
     m_bitmap = &bitmap;
@@ -61,7 +61,7 @@ Renderer::Renderer(Core& core, Allocator& allocator, Bitmap& bitmap) {
     onResize(wWidth, wHeight);
 }
 
-Renderer::Renderer(Renderer&& other) {
+Renderer::Renderer(Renderer&& other) : m_staging(std::move(other.m_staging)) {
     *this = std::move(other);
 }
 
@@ -83,8 +83,8 @@ void Renderer::record(vk::CommandBuffer& commandBuffer) {
     commandBuffer.pipelineBarrier(vk::PipelineStageFlags::FragmentShader, vk::PipelineStageFlags::Transfer, vk::DependencyFlags::None,
         {}, {}, { barrier });
 
-    m_allocator->transfer(m_bitmap->data(), m_bitmap->size(), *m_texture, vk::ImageLayout::TransferDstOptimal);
-    m_allocator->flushStaging(commandBuffer);
+    m_staging.transfer(m_bitmap->data(), m_bitmap->size(), *m_texture, vk::ImageLayout::TransferDstOptimal);
+    m_staging.flush(commandBuffer);
 
     barrier.oldLayout = vk::ImageLayout::TransferDstOptimal;
     barrier.newLayout = vk::ImageLayout::ShaderReadOnlyOptimal;
@@ -130,7 +130,7 @@ void Renderer::createVertexBuffer(vk::CommandBuffer& commandBuffer) {
     m_vertexAlloc = m_allocator->allocate(m_vertexBuffer->requirements(), vk::MemoryPropertyFlags::DeviceLocal, vk::MemoryPropertyFlags::DeviceLocal);
     m_vertexBuffer->bind(*m_vertexAlloc.memory, m_vertexAlloc.offset);
 
-    m_allocator->transfer(vertices.data(), info.size, *m_vertexBuffer);
+    m_staging.transfer(vertices.data(), info.size, *m_vertexBuffer);
 }
 
 void Renderer::createIndexBuffer(vk::CommandBuffer& commandBuffer) {
@@ -148,7 +148,7 @@ void Renderer::createIndexBuffer(vk::CommandBuffer& commandBuffer) {
     m_indexAlloc = m_allocator->allocate(m_indexBuffer->requirements(), vk::MemoryPropertyFlags::DeviceLocal, vk::MemoryPropertyFlags::DeviceLocal);
     m_indexBuffer->bind(*m_indexAlloc.memory, m_indexAlloc.offset);
 
-    m_allocator->transfer(indices.data(), info.size, *m_indexBuffer);
+    m_staging.transfer(indices.data(), info.size, *m_indexBuffer);
 }
 
 void Renderer::createTexture(vk::CommandBuffer& commandBuffer) {
@@ -186,8 +186,8 @@ void Renderer::createTexture(vk::CommandBuffer& commandBuffer) {
     commandBuffer.pipelineBarrier(vk::PipelineStageFlags::TopOfPipe, vk::PipelineStageFlags::Transfer, vk::DependencyFlags::None,
         {}, {}, { barrier });
 
-    m_allocator->transfer(m_bitmap->data(), m_bitmap->size(), *m_texture, vk::ImageLayout::TransferDstOptimal);
-    m_allocator->flushStaging(commandBuffer);
+    m_staging.transfer(m_bitmap->data(), m_bitmap->size(), *m_texture, vk::ImageLayout::TransferDstOptimal);
+    m_staging.flush(commandBuffer);
 
     barrier.oldLayout = vk::ImageLayout::TransferDstOptimal;
     barrier.newLayout = vk::ImageLayout::ShaderReadOnlyOptimal;
