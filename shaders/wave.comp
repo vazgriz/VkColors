@@ -6,27 +6,78 @@ uint toRGBA32(vec4 color) {
     return ((uColor.r & 255) << 24) | ((uColor.g & 255) << 16) | ((uColor.b & 255) << 8) | 255;
 }
 
-vec4 toVec4(uint color) {
-    uvec4 uColor = uvec4((color >> 24) & 255, (color >> 16) & 255, (color >> 8) & 255, 0);
-    return vec4(uColor.r / 255, uColor.g / 255, uColor.b / 255, 0);
+uvec4 toUvec4(uint color) {
+     return uvec4((color >> 24) & 255, (color >> 16) & 255, (color >> 8) & 255, 0);
 }
+
+vec4 toVec4(uvec4 color) {
+    return vec4(float(color.r) / 255, float(color.g) / 255, float(color.b) / 255, float(color.a) / 255);
+}
+
+layout(local_size_x_id = 0) in;
 
 struct Element {
     uint index;
     uint score;
 };
 
-layout(binding = 0) buffer Pyramid {
+layout(set = 0, binding = 0) buffer Pyramid {
     Element[] elements;
 } pyramid[24];
 
 layout(push_constant) uniform Info {
-    uint color;
+    int width;
+    int height;
     uint count;
-    uint targetIndex;
+    uint targetLevel;
+    uint color;
 } info;
 
-layout(local_size_x_id = 0) in;
+layout(set = 1, binding = 0, rgba8ui) uniform uimage2D image;
+
+layout(set = 1, binding = 1) buffer Input {
+    ivec2[] data;
+} inputData;
 
 void main() {
+    if (gl_LocalInvocationIndex >= info.count) return;
+    ivec2 pos = inputData.data[gl_LocalInvocationIndex];
+    ivec2 neighbors[8] = ivec2[](
+        pos + ivec2(-1, -1),
+        pos + ivec2(-1,  0),
+        pos + ivec2(-1,  1),
+        pos + ivec2( 0, -1),
+        pos + ivec2( 0,  1),
+        pos + ivec2( 1, -1),
+        pos + ivec2( 1,  0),
+        pos + ivec2( 1,  1)
+    );
+
+    vec4 sum = vec4(0);
+    int count = 0;
+
+    for (int i = 0; i < 8; i++) {
+        ivec2 n = neighbors[i];
+        if (n.x >= 0 && n.x < info.width
+            && n.y >= 0 && n.y < info.height) {
+            uvec4 color = imageLoad(image, n);
+            if (color.a != 0) {
+                sum += toVec4(color);
+                count++;
+            }
+        }
+    }
+
+    if (count > 0) {
+        sum /= count;
+    }
+
+    vec4 refColor = toVec4(toUvec4(info.color));
+    float score = distance(refColor, sum);
+    int realScore = int(round(score));
+
+    Element e;
+    e.score = realScore;
+    e.index = gl_LocalInvocationIndex;
+    pyramid[info.targetLevel].elements[gl_LocalInvocationIndex] = e;
 }

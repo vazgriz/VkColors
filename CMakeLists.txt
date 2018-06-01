@@ -14,7 +14,9 @@ set(GLSL_VALIDATOR)
 set(SHADER_SOURCES
     "${PROJECT_SOURCE_DIR}/shaders/shader.vert" ;
     "${PROJECT_SOURCE_DIR}/shaders/shader.frag" ;
-    "${PROJECT_SOURCE_DIR}/shaders/wave.comp"
+    "${PROJECT_SOURCE_DIR}/shaders/wave.comp" ;
+    "${PROJECT_SOURCE_DIR}/shaders/reduce.comp" ;
+    "${PROJECT_SOURCE_DIR}/shaders/finish.comp"
 )
 set(SPIRV_BINARY_FILES)
 

@@ -1,0 +1,40 @@
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(local_size_x_id = 0) in;
+
+layout(push_constant) uniform Info {
+    int width;
+    int height;
+    uint count;
+    uint targetLevel;
+} info;
+
+struct Element {
+    uint index;
+    uint score;
+};
+
+layout(set = 0, binding = 0) buffer Pyramid {
+    Element[] elements;
+} pyramid[24];
+
+void main() {
+    uint left = gl_LocalInvocationIndex * 2;
+    uint right = left + 1;
+
+    if (left < info.count) {
+        Element leftE = pyramid[info.targetLevel + 1].elements[left];
+        if (right < info.count) {
+            Element rightE = pyramid[info.targetLevel + 1].elements[right];
+
+            //if (leftE.score > rightE.score) {
+            //    pyramid[info.targetLevel].elements[gl_LocalInvocationIndex] = leftE;
+            //} else {
+                pyramid[info.targetLevel].elements[gl_LocalInvocationIndex] = rightE;
+            //}
+        } else {
+            pyramid[info.targetLevel].elements[gl_LocalInvocationIndex] = leftE;
+        }
+    }
+}
