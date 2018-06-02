@@ -401,17 +401,22 @@ void Generator::createMainPipelineLayout() {
 void Generator::createMainPipeline(const std::string& shader) {
     vk::ShaderModule module = loadShader(m_core->device(), shader);
 
-    uint32_t groupSize = GROUP_SIZE;
+    uint32_t specData[2] = { GROUP_SIZE, static_cast<uint32_t>(m_pyramid->buffers().size()) };
 
-    vk::SpecializationMapEntry entry = {};
-    entry.constantID = 0;
-    entry.size = sizeof(groupSize);
-    entry.offset = 0;
+    vk::SpecializationMapEntry entry1 = {};
+    entry1.constantID = 0;
+    entry1.size = sizeof(uint32_t);
+    entry1.offset = 0;
+
+    vk::SpecializationMapEntry entry2 = {};
+    entry2.constantID = 1;
+    entry2.size = sizeof(uint32_t);
+    entry2.offset = sizeof(uint32_t);
 
     vk::SpecializationInfo specInfo = {};
-    specInfo.dataSize = sizeof(groupSize);
-    specInfo.data = &groupSize;
-    specInfo.mapEntries = { entry };
+    specInfo.dataSize = sizeof(specData);
+    specInfo.data = specData;
+    specInfo.mapEntries = { entry1, entry2 };
 
     vk::PipelineShaderStageCreateInfo shaderInfo = {};
     shaderInfo.module = &module;
@@ -441,17 +446,22 @@ void Generator::createReducePipelineLayout() {
 void Generator::createReducePipeline() {
     vk::ShaderModule module = loadShader(m_core->device(), "shaders/reduce.comp.spv");
 
-    uint32_t groupSize = GROUP_SIZE;
+    uint32_t specData[2] = { GROUP_SIZE, static_cast<uint32_t>(m_pyramid->buffers().size()) };
 
-    vk::SpecializationMapEntry entry = {};
-    entry.constantID = 0;
-    entry.size = sizeof(groupSize);
-    entry.offset = 0;
+    vk::SpecializationMapEntry entry1 = {};
+    entry1.constantID = 0;
+    entry1.size = sizeof(uint32_t);
+    entry1.offset = 0;
+
+    vk::SpecializationMapEntry entry2 = {};
+    entry2.constantID = 1;
+    entry2.size = sizeof(uint32_t);
+    entry2.offset = sizeof(uint32_t);
 
     vk::SpecializationInfo specInfo = {};
-    specInfo.dataSize = sizeof(groupSize);
-    specInfo.data = &groupSize;
-    specInfo.mapEntries = { entry };
+    specInfo.dataSize = sizeof(specData);
+    specInfo.data = specData;
+    specInfo.mapEntries = { entry1, entry2 };
 
     vk::PipelineShaderStageCreateInfo shaderInfo = {};
     shaderInfo.module = &module;
@@ -481,17 +491,22 @@ void Generator::createFinishPipelineLayout() {
 void Generator::createFinishPipeline() {
     vk::ShaderModule module = loadShader(m_core->device(), "shaders/finish.comp.spv");
 
-    uint32_t groupSize = GROUP_SIZE;
+    uint32_t specData[2] = { GROUP_SIZE, static_cast<uint32_t>(m_pyramid->buffers().size()) };
 
-    vk::SpecializationMapEntry entry = {};
-    entry.constantID = 0;
-    entry.size = sizeof(groupSize);
-    entry.offset = 0;
+    vk::SpecializationMapEntry entry1 = {};
+    entry1.constantID = 0;
+    entry1.size = sizeof(uint32_t);
+    entry1.offset = 0;
+
+    vk::SpecializationMapEntry entry2 = {};
+    entry2.constantID = 1;
+    entry2.size = sizeof(uint32_t);
+    entry2.offset = sizeof(uint32_t);
 
     vk::SpecializationInfo specInfo = {};
-    specInfo.dataSize = sizeof(groupSize);
-    specInfo.data = &groupSize;
-    specInfo.mapEntries = { entry };
+    specInfo.dataSize = sizeof(specData);
+    specInfo.data = specData;
+    specInfo.mapEntries = { entry1, entry2 };
 
     vk::PipelineShaderStageCreateInfo shaderInfo = {};
     shaderInfo.module = &module;
