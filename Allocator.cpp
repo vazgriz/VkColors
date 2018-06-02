@@ -1,5 +1,6 @@
 #include "Allocator.h"
 #include "Utilities.h"
+#include <stdexcept>
 
 Allocator::Allocator(Core& core) {
     m_core = &core;
@@ -20,8 +21,7 @@ Page* Allocator::allocNewPage(uint32_t type, size_t size) {
     info.allocationSize = allocSize;
 
     try {
-        vk::DeviceMemory memory = vk::DeviceMemory(m_core->device(), info);
-        m_pages[type].emplace_back(Page{ std::move(memory), allocSize, 0 });
+        m_pages[type].emplace_back(Page{ std::make_unique<vk::DeviceMemory>(m_core->device(), info), allocSize, size });
         return &m_pages[type].back();
     }
     catch (...) {
@@ -36,14 +36,15 @@ Allocation Allocator::tryAlloc(uint32_t type, vk::MemoryRequirements requirement
         auto& page = pages.back();
 
         size_t aligned = align(page.ptr, requirements.alignment);
-        if (aligned + requirements.size > page.size) {
-            return { &page.memory, requirements.size, aligned };
+        if (page.ptr + aligned + requirements.size <= page.size) {
+            page.ptr += aligned + requirements.size;
+            return { page.memory.get(), requirements.size, aligned };
         }
     }
 
     auto newPage = allocNewPage(type, requirements.size);
     if (newPage != nullptr) {
-        return { &newPage->memory, requirements.size, 0 };
+        return { newPage->memory.get(), requirements.size, 0 };
     }
 
     return {};
@@ -70,5 +71,5 @@ Allocation Allocator::allocate(vk::MemoryRequirements requirements, vk::MemoryPr
         }
     }
     
-    return {};
+    throw std::runtime_error("Failed to allocate memory");
 }

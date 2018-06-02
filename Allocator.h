@@ -10,7 +10,7 @@ struct Allocation {
 };
 
 struct Page {
-    vk::DeviceMemory memory;
+    std::unique_ptr<vk::DeviceMemory> memory;
     size_t size;
     size_t ptr;
 };
