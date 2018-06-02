@@ -1,5 +1,6 @@
 #include "Pyramid.h"
 #include <math.h>
+#include <cmath>
 
 #define ELEMENT_SIZE 8
 //struct {
@@ -7,14 +8,17 @@
 //    uint score;
 //}
 
-Pyramid::Pyramid(Core& core, Allocator& allocator) {
+Pyramid::Pyramid(Core& core, Allocator& allocator, Bitmap& bitmap) {
     m_core = &core;
     m_allocator = &allocator;
+    m_bitmap = &bitmap;
 
-    createDescriptorSetLayout();
-    createDescriptorPool();
+    size_t levels = static_cast<size_t>(ceil(log2(m_bitmap->width() * m_bitmap->height())));
+
+    createDescriptorSetLayout(levels);
+    createDescriptorPool(levels);
     createDescriptorSet();
-    createBuffers(24);
+    createBuffers(levels);
     writeDescriptor();
 }
 
@@ -22,11 +26,11 @@ Pyramid::Pyramid(Pyramid&& other) {
     *this = std::move(other);
 }
 
-void Pyramid::createDescriptorSetLayout() {
+void Pyramid::createDescriptorSetLayout(size_t levels) {
     vk::DescriptorSetLayoutBinding binding = {};
     binding.binding = 0;
     binding.descriptorType = vk::DescriptorType::StorageBuffer;
-    binding.descriptorCount = 24;
+    binding.descriptorCount = levels;
     binding.stageFlags = vk::ShaderStageFlags::Compute;
 
     vk::DescriptorSetLayoutCreateInfo info = {};
@@ -35,10 +39,10 @@ void Pyramid::createDescriptorSetLayout() {
     m_descriptorSetLayout = std::make_unique<vk::DescriptorSetLayout>(m_core->device(), info);
 }
 
-void Pyramid::createDescriptorPool() {
+void Pyramid::createDescriptorPool(size_t levels) {
     vk::DescriptorPoolSize size = {};
     size.type = vk::DescriptorType::StorageBuffer;
-    size.descriptorCount = 24;
+    size.descriptorCount = levels;
 
     vk::DescriptorPoolCreateInfo info = {};
     info.poolSizes = { size };

@@ -23,7 +23,7 @@ int main() {
     Bitmap bitmap = Bitmap(2048, 1024);
     Renderer renderer = Renderer(core, allocator, bitmap);
     ShuffleSource source = ShuffleSource(5);
-    Pyramid pyramid = Pyramid(core, allocator);
+    Pyramid pyramid = Pyramid(core, allocator, bitmap);
     Generator generator = Generator(core, allocator, source, bitmap, pyramid, "shaders/wave.comp.spv");
     generator.run();
 
