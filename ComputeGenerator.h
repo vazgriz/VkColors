@@ -84,6 +84,5 @@ private:
     void addNeighborsToOpenSet(glm::ivec2 pos);
     void readResult(std::vector<glm::ivec2>& openList, Color32 color);
 
-    static void generatorThread(ComputeGenerator* generator);
     void generatorLoop();
 };

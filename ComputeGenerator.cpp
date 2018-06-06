@@ -47,16 +47,12 @@ ComputeGenerator::ComputeGenerator(ComputeGenerator&& other) : m_staging(std::mo
 
 void ComputeGenerator::run() {
     *m_running = true;
-    m_thread = std::thread(&generatorThread, this);
+    m_thread = std::thread([this]() -> void { generatorLoop(); });
 }
 
 void ComputeGenerator::stop() {
     *m_running = false;
     m_thread.join();
-}
-
-void ComputeGenerator::generatorThread(ComputeGenerator* generator) {
-    generator->generatorLoop();
 }
 
 void ComputeGenerator::generatorLoop() {
