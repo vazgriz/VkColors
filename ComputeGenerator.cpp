@@ -1,4 +1,4 @@
-#include "Generator.h"
+#include "ComputeGenerator.h"
 #include "Utilities.h"
 #include <iostream>
 #include <cmath>
@@ -6,7 +6,7 @@
 #define FRAMES 2
 #define GROUP_SIZE 64
 
-Generator::Generator(Core& core, Allocator& allocator, ColorSource& source, Bitmap& bitmap, Pyramid& pyramid, const std::string& shader) : m_staging(core, allocator) {
+ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, Bitmap& bitmap, Pyramid& pyramid, const std::string& shader) : m_staging(core, allocator) {
     m_core = &core;
     m_allocator = &allocator;
     m_source = &source;
@@ -41,25 +41,25 @@ Generator::Generator(Core& core, Allocator& allocator, ColorSource& source, Bitm
     }
 }
 
-Generator::Generator(Generator&& other) : m_staging(std::move(other.m_staging)) {
+ComputeGenerator::ComputeGenerator(ComputeGenerator&& other) : m_staging(std::move(other.m_staging)) {
     *this = std::move(other);
 }
 
-void Generator::run() {
+void ComputeGenerator::run() {
     *m_running = true;
     m_thread = std::thread(&generatorThread, this);
 }
 
-void Generator::stop() {
+void ComputeGenerator::stop() {
     *m_running = false;
     m_thread.join();
 }
 
-void Generator::generatorThread(Generator* generator) {
+void ComputeGenerator::generatorThread(ComputeGenerator* generator) {
     generator->generatorLoop();
 }
 
-void Generator::generatorLoop() {
+void ComputeGenerator::generatorLoop() {
     size_t counter = 0;
     std::vector<glm::ivec2> openList;
     Color32 color;
@@ -115,7 +115,7 @@ struct PushConstants {
     uint32_t color;
 };
 
-void Generator::record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, Color32 color) {
+void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, Color32 color) {
     if (openList.size() == 0) return;
     commandBuffer.bindPipeline(vk::PipelineBindPoint::Compute, *m_mainPipeline);
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::Compute, *m_mainPipelineLayout, 0, { m_pyramid->descriptorSet(), *m_descriptorSet }, {});
@@ -185,7 +185,7 @@ void Generator::record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>
         {}, { barrier }, {});
 }
 
-void Generator::readResult(std::vector<glm::ivec2>& openList, Color32 color) {
+void ComputeGenerator::readResult(std::vector<glm::ivec2>& openList, Color32 color) {
     uint32_t result;
     memcpy(&result, m_resultMapping, sizeof(uint32_t));
     glm::ivec2 pos = openList[result];
@@ -194,11 +194,11 @@ void Generator::readResult(std::vector<glm::ivec2>& openList, Color32 color) {
     m_openSet.erase(pos);
 }
 
-void Generator::addToOpenSet(glm::ivec2 pos) {
+void ComputeGenerator::addToOpenSet(glm::ivec2 pos) {
     m_openSet.insert(pos);
 }
 
-void Generator::addNeighborsToOpenSet(glm::ivec2 pos) {
+void ComputeGenerator::addNeighborsToOpenSet(glm::ivec2 pos) {
     glm::ivec2 neighbors[8] = {
         pos + glm::ivec2{ -1, -1 },
         pos + glm::ivec2{ -1,  0 },
@@ -220,7 +220,7 @@ void Generator::addNeighborsToOpenSet(glm::ivec2 pos) {
     }
 }
 
-void Generator::createCommandPool() {
+void ComputeGenerator::createCommandPool() {
     vk::CommandPoolCreateInfo info = {};
     info.queueFamilyIndex = m_core->computeQueueFamilyIndex();
     info.flags = vk::CommandPoolCreateFlags::ResetCommandBuffer;
@@ -228,7 +228,7 @@ void Generator::createCommandPool() {
     m_commandPool = std::make_unique<vk::CommandPool>(m_core->device(), info);
 }
 
-void Generator::createCommandBuffers() {
+void ComputeGenerator::createCommandBuffers() {
     vk::CommandBufferAllocateInfo info = {};
     info.commandPool = m_commandPool.get();
     info.commandBufferCount = FRAMES;
@@ -236,7 +236,7 @@ void Generator::createCommandBuffers() {
     m_commandBuffers = m_commandPool->allocate(info);
 }
 
-void Generator::createTexture() {
+void ComputeGenerator::createTexture() {
     vk::ImageCreateInfo info = {};
     info.format = vk::Format::R8G8B8A8_Unorm;
     info.extent = { static_cast<uint32_t>(m_bitmap->width()), static_cast<uint32_t>(m_bitmap->height()), 1 };
@@ -253,7 +253,7 @@ void Generator::createTexture() {
     m_texture->bind(*alloc.memory, alloc.size);
 }
 
-void Generator::createTextureView() {
+void ComputeGenerator::createTextureView() {
     vk::ImageViewCreateInfo info = {};
     info.image = m_texture.get();
     info.format = m_texture->format();
@@ -267,7 +267,7 @@ void Generator::createTextureView() {
     m_textureView = std::make_unique<vk::ImageView>(m_core->device(), info);
 }
 
-void Generator::createInputBuffer() {
+void ComputeGenerator::createInputBuffer() {
     vk::BufferCreateInfo info = {};
     info.size = sizeof(glm::uvec2) * m_bitmap->width() * m_bitmap->height();
     info.usage = vk::BufferUsageFlags::StorageBuffer | vk::BufferUsageFlags::TransferDst;
@@ -278,7 +278,7 @@ void Generator::createInputBuffer() {
     m_inputBuffer->bind(*alloc.memory, alloc.offset);
 }
 
-void Generator::createOutputBuffer() {
+void ComputeGenerator::createOutputBuffer() {
     vk::BufferCreateInfo info = {};
     info.size = sizeof(uint32_t);
     info.usage = vk::BufferUsageFlags::StorageBuffer | vk::BufferUsageFlags::TransferSrc;
@@ -289,7 +289,7 @@ void Generator::createOutputBuffer() {
     m_outputBuffer->bind(*alloc.memory, alloc.offset);
 }
 
-void Generator::createReadBuffer() {
+void ComputeGenerator::createReadBuffer() {
     vk::BufferCreateInfo info = {};
     info.size = sizeof(uint32_t);
     info.usage = vk::BufferUsageFlags::TransferDst;
@@ -303,7 +303,7 @@ void Generator::createReadBuffer() {
     m_resultMapping = m_readAlloc.memory->map(m_readAlloc.offset, m_readAlloc.size);
 }
 
-void Generator::createDescriptorSetLayout() {
+void ComputeGenerator::createDescriptorSetLayout() {
     vk::DescriptorSetLayoutBinding binding1 = {};
     binding1.binding = 0;
     binding1.descriptorType = vk::DescriptorType::StorageImage;
@@ -328,7 +328,7 @@ void Generator::createDescriptorSetLayout() {
     m_descriptorSetLayout = std::make_unique<vk::DescriptorSetLayout>(m_core->device(), info);
 }
 
-void Generator::createDescriptorPool() {
+void ComputeGenerator::createDescriptorPool() {
     vk::DescriptorPoolSize size1 = {};
     size1.type = vk::DescriptorType::StorageImage;
     size1.descriptorCount = 1;
@@ -344,7 +344,7 @@ void Generator::createDescriptorPool() {
     m_descriptorPool = std::make_unique<vk::DescriptorPool>(m_core->device(), info);
 }
 
-void Generator::createDescriptorSet() {
+void ComputeGenerator::createDescriptorSet() {
     vk::DescriptorSetAllocateInfo info = {};
     info.descriptorPool = m_descriptorPool.get();
     info.setLayouts = { *m_descriptorSetLayout };
@@ -352,7 +352,7 @@ void Generator::createDescriptorSet() {
     m_descriptorSet = std::make_unique<vk::DescriptorSet>(std::move(m_descriptorPool->allocate(info)[0]));
 }
 
-void Generator::writeDescriptors() {
+void ComputeGenerator::writeDescriptors() {
     vk::DescriptorImageInfo imageInfo = {};
     imageInfo.imageView = m_textureView.get();
     imageInfo.imageLayout = vk::ImageLayout::General;
@@ -386,7 +386,7 @@ void Generator::writeDescriptors() {
     vk::DescriptorSet::update(m_core->device(), { write1, write2, write3 }, {});
 }
 
-void Generator::createMainPipelineLayout() {
+void ComputeGenerator::createMainPipelineLayout() {
     vk::PushConstantRange range = {};
     range.size = 5 * sizeof(uint32_t);
     range.stageFlags = vk::ShaderStageFlags::Compute;
@@ -398,7 +398,7 @@ void Generator::createMainPipelineLayout() {
     m_mainPipelineLayout = std::make_unique<vk::PipelineLayout>(m_core->device(), info);
 }
 
-void Generator::createMainPipeline(const std::string& shader) {
+void ComputeGenerator::createMainPipeline(const std::string& shader) {
     vk::ShaderModule module = loadShader(m_core->device(), shader);
 
     uint32_t specData[2] = { GROUP_SIZE, static_cast<uint32_t>(m_pyramid->buffers().size()) };
@@ -431,7 +431,7 @@ void Generator::createMainPipeline(const std::string& shader) {
     m_mainPipeline = std::make_unique<vk::ComputePipeline>(m_core->device(), info);
 }
 
-void Generator::createReducePipelineLayout() {
+void ComputeGenerator::createReducePipelineLayout() {
     vk::PushConstantRange range = {};
     range.size = 4 * sizeof(uint32_t);
     range.stageFlags = vk::ShaderStageFlags::Compute;
@@ -443,7 +443,7 @@ void Generator::createReducePipelineLayout() {
     m_reducePipelineLayout = std::make_unique<vk::PipelineLayout>(m_core->device(), info);
 }
 
-void Generator::createReducePipeline() {
+void ComputeGenerator::createReducePipeline() {
     vk::ShaderModule module = loadShader(m_core->device(), "shaders/reduce.comp.spv");
 
     uint32_t specData[2] = { GROUP_SIZE, static_cast<uint32_t>(m_pyramid->buffers().size()) };
@@ -476,7 +476,7 @@ void Generator::createReducePipeline() {
     m_reducePipeline = std::make_unique<vk::ComputePipeline>(m_core->device(), info);
 }
 
-void Generator::createFinishPipelineLayout() {
+void ComputeGenerator::createFinishPipelineLayout() {
     vk::PushConstantRange range = {};
     range.size = 5 * sizeof(uint32_t);
     range.stageFlags = vk::ShaderStageFlags::Compute;
@@ -488,7 +488,7 @@ void Generator::createFinishPipelineLayout() {
     m_finishPipelineLayout = std::make_unique<vk::PipelineLayout>(m_core->device(), info);
 }
 
-void Generator::createFinishPipeline() {
+void ComputeGenerator::createFinishPipeline() {
     vk::ShaderModule module = loadShader(m_core->device(), "shaders/finish.comp.spv");
 
     uint32_t specData[2] = { GROUP_SIZE, static_cast<uint32_t>(m_pyramid->buffers().size()) };
@@ -521,7 +521,7 @@ void Generator::createFinishPipeline() {
     m_finishPipeline = std::make_unique<vk::ComputePipeline>(m_core->device(), info);
 }
 
-void Generator::createFences() {
+void ComputeGenerator::createFences() {
     vk::FenceCreateInfo info = {};
     info.flags = vk::FenceCreateFlags::Signaled;
 
