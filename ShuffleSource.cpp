@@ -12,7 +12,7 @@ ShuffleSource::ShuffleSource(size_t bitDepth) {
     for (size_t r = 0; r < max; r++) {
         for (size_t g = 0; g < max; g++) {
             for (size_t b = 0; b < max; b++) {
-                Color32 color = { map(r, bitDepth), map(g, bitDepth), map(b, bitDepth) };
+                Color32 color = { map(r, bitDepth), map(g, bitDepth), map(b, bitDepth), 255 };
                 m_colors.push_back(color);
             }
         }
