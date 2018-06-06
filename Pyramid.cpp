@@ -30,7 +30,7 @@ void Pyramid::createDescriptorSetLayout(size_t levels) {
     vk::DescriptorSetLayoutBinding binding = {};
     binding.binding = 0;
     binding.descriptorType = vk::DescriptorType::StorageBuffer;
-    binding.descriptorCount = levels;
+    binding.descriptorCount = static_cast<uint32_t>(levels);
     binding.stageFlags = vk::ShaderStageFlags::Compute;
 
     vk::DescriptorSetLayoutCreateInfo info = {};
@@ -42,7 +42,7 @@ void Pyramid::createDescriptorSetLayout(size_t levels) {
 void Pyramid::createDescriptorPool(size_t levels) {
     vk::DescriptorPoolSize size = {};
     size.type = vk::DescriptorType::StorageBuffer;
-    size.descriptorCount = levels;
+    size.descriptorCount = static_cast<uint32_t>(levels);
 
     vk::DescriptorPoolCreateInfo info = {};
     info.poolSizes = { size };

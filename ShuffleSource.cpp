@@ -8,7 +8,7 @@ uint8_t map(size_t num, size_t bitDepth) {
 }
 
 ShuffleSource::ShuffleSource(size_t bitDepth) {
-    size_t max = pow(2, bitDepth);
+    size_t max = static_cast<size_t>(pow(2, bitDepth));
     for (size_t r = 0; r < max; r++) {
         for (size_t g = 0; g < max; g++) {
             for (size_t b = 0; b < max; b++) {
