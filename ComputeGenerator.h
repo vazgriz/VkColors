@@ -13,16 +13,7 @@
 #include "Bitmap.h"
 #include "Pyramid.h"
 #include "Staging.h"
-
-namespace std {
-    template<> struct hash<glm::ivec2> {
-        size_t operator () (const glm::ivec2& v) const {
-            size_t hash = 31 + std::hash<int>{}(v.x);
-            hash = hash * 37 + std::hash<int>{}(v.y);
-            return hash;
-        }
-    };
-}
+#include "Utilities.h"
 
 class ComputeGenerator : public Generator {
 public:
