@@ -20,7 +20,7 @@ int main() {
 
     Core core = Core(window);
     Allocator allocator = Allocator(core);
-    Bitmap bitmap = Bitmap(2048, 1024);
+    Bitmap bitmap = Bitmap(512, 512);
     Renderer renderer = Renderer(core, allocator, bitmap);
     ShuffleSource source = ShuffleSource(5);
     Pyramid pyramid = Pyramid(core, allocator, bitmap);
