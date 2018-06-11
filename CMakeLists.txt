@@ -45,6 +45,7 @@ add_executable(VkColors
     shufflesource.cpp
     pyramid.cpp
     computegenerator.cpp
+    wavegenerator.cpp
     staging.cpp
     semaphore.cpp
 )

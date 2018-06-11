@@ -32,3 +32,7 @@ size_t align(size_t ptr, size_t align) {
         return ptr;
     }
 }
+
+int32_t length2(glm::ivec3 v) {
+    return v.x * v.x + v.y * v.y + v.z * v.z;
+}
