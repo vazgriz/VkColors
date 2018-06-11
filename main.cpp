@@ -9,6 +9,7 @@
 #include "ShuffleSource.h"
 #include "ComputeGenerator.h"
 #include "WaveGenerator.h"
+#include "CoralGenerator.h"
 #include "Pyramid.h"
 
 int main() {
@@ -23,7 +24,7 @@ int main() {
     Allocator allocator = Allocator(core);
     Bitmap bitmap = Bitmap(512, 512);
     Renderer renderer = Renderer(core, allocator, bitmap);
-    ShuffleSource source = ShuffleSource(5);
+    ShuffleSource source = ShuffleSource(6);
     //Pyramid pyramid = Pyramid(core, allocator, bitmap);
     //std::unique_ptr<Generator> generator = std::make_unique<ComputeGenerator>(core, allocator, source, bitmap, pyramid, "shaders/wave.comp.spv");
     std::unique_ptr<Generator> generator = std::make_unique<WaveGenerator>(source, bitmap);
