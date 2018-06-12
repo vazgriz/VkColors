@@ -162,7 +162,7 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
 
         commandBuffer.pushConstants(*m_mainPipelineLayout, vk::ShaderStageFlags::Compute, 0, 2 * sizeof(uint32_t), &constants);
 
-        uint32_t reduceGroups = (static_cast<uint32_t>(openList.size()) / GROUP_SIZE) + 1;
+        uint32_t reduceGroups = (static_cast<uint32_t>(currentCount) / GROUP_SIZE) + 1;
         commandBuffer.dispatch(reduceGroups, 1, 1);
 
         barrier.buffer = &m_pyramid->buffers()[constants.targetLevel];
