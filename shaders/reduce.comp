@@ -31,10 +31,10 @@ void main() {
     uint right = left + 1;
 
     Element leftE = pyramid[info.targetLevel + 1].elements[left];
-    if (right < info.count) {
-        Element rightE = pyramid[info.targetLevel + 1].elements[right];
+    Element rightE = pyramid[info.targetLevel + 1].elements[right];
 
-        if (leftE.score > rightE.score) {
+    if (right < info.count) {
+        if (leftE.score < rightE.score) {
             pyramid[info.targetLevel].elements[gl_GlobalInvocationID.x] = leftE;
         } else {
             pyramid[info.targetLevel].elements[gl_GlobalInvocationID.x] = rightE;
