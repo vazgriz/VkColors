@@ -15,14 +15,6 @@ struct Page {
     size_t ptr;
 };
 
-struct StagingData {
-    size_t offset;
-    size_t size;
-    vk::Buffer* dstBuffer;
-    vk::Image* dstImage;
-    vk::ImageLayout imageLayout;
-};
-
 class Allocator {
 public:
     Allocator(Core& core);

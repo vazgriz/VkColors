@@ -1,6 +1,14 @@
 #pragma once
 #include "Allocator.h"
 
+struct StagingData {
+    size_t offset;
+    size_t size;
+    vk::Buffer* dstBuffer;
+    vk::Image* dstImage;
+    vk::ImageLayout imageLayout;
+};
+
 class Staging {
 public:
     Staging(Core& core, Allocator& allocator);
