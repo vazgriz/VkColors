@@ -126,7 +126,7 @@ void ComputeGenerator::generatorLoop() {
 struct PushConstants {
     uint32_t count;
     uint32_t targetLevel;
-    glm::vec3 color;
+    glm::ivec3 color;
 };
 
 void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, Color32 color) {
@@ -137,7 +137,7 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
     PushConstants constants = {};
     constants.count = static_cast<uint32_t>(openList.size());
     constants.targetLevel = static_cast<uint32_t>(ceil(log2(openList.size())));
-    constants.color = glm::vec3{ color.r / 255.0f, color.g / 255.0f, color.b / 255.0f };
+    constants.color = glm::ivec3{ color.r, color.g, color.b };
 
     commandBuffer.pushConstants(*m_mainPipelineLayout, vk::ShaderStageFlags::Compute, 0, sizeof(PushConstants), &constants);
 

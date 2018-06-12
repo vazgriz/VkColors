@@ -16,16 +16,16 @@ layout(set = 0, binding = 0) buffer Pyramid {
 layout(push_constant) uniform Info {
     uint count;
     uint targetLevel;
-    vec3 color;
+    ivec3 color;
 } info;
 
-layout(set = 1, binding = 0, rgba8) uniform image2D image;
+layout(set = 1, binding = 0, rgba8i) uniform iimage2D image;
 
 layout(set = 1, binding = 1) buffer Input {
     ivec2[] data;
 } inputData;
 
-float length2(vec3 v) {
+int length2(ivec3 v) {
     return v.x * v.x + v.y * v.y + v.z * v.z;
 }
 
@@ -58,10 +58,9 @@ void main() {
 
     for (int i = 0; i < 8; i++) {
         ivec2 n = neighbors[i];
-        vec4 color = imageLoad(image, n);
+        ivec4 color = imageLoad(image, n);
         if (color.a != 0) {
-            float scoreF = length2(info.color - color.rgb);
-            scores[i] = uint(round(scoreF));
+            scores[i] = length2(info.color - color.rgb);
         }
     }
 
