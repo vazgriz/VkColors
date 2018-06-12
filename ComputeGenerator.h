@@ -37,7 +37,6 @@ private:
     std::unique_ptr<vk::Image> m_texture;
     std::unique_ptr<vk::ImageView> m_textureView;
     std::unique_ptr<vk::Buffer> m_inputBuffer;
-    std::unique_ptr<vk::Buffer> m_outputBuffer;
     std::unique_ptr<vk::Buffer> m_readBuffer;
     Allocation m_readAlloc;
     void* m_resultMapping;
@@ -66,7 +65,6 @@ private:
     void createTexture();
     void createTextureView();
     void createInputBuffer();
-    void createOutputBuffer();
     void createReadBuffer();
     void createDescriptorSetLayout();
     void createDescriptorPool();
@@ -76,8 +74,6 @@ private:
     void createMainPipeline(const std::string& shader);
     void createReducePipelineLayout();
     void createReducePipeline();
-    void createFinishPipelineLayout();
-    void createFinishPipeline();
     void createFences();
 
     void addToOpenSet(glm::ivec2 pos);

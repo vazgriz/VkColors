@@ -20,7 +20,6 @@ ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource
     createTexture();
     createTextureView();
     createInputBuffer();
-    createOutputBuffer();
     createReadBuffer();
     createDescriptorSetLayout();
     createDescriptorPool();
@@ -30,8 +29,6 @@ ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource
     createMainPipeline(shader);
     createReducePipelineLayout();
     createReducePipeline();
-    createFinishPipelineLayout();
-    createFinishPipeline();
     createFences();
 
     glm::ivec2 pos = { static_cast<int>(m_bitmap->width() / 2), static_cast<int>(m_bitmap->height() / 2) };
@@ -73,12 +70,6 @@ void ComputeGenerator::generatorLoop() {
         color.a = 255;
 
         size_t index = m_frame % FRAMES;
-        m_fences[index].wait();
-        m_fences[index].reset();
-
-        if (m_frame > 1) {
-            readResult(openList, color);
-        }
 
         vk::CommandBuffer& commandBuffer = m_commandBuffers[index];
         commandBuffer.reset(vk::CommandBufferResetFlags::None);
@@ -88,27 +79,54 @@ void ComputeGenerator::generatorLoop() {
 
         commandBuffer.begin(beginInfo);
 
+        vk::ImageMemoryBarrier barrier = {};
+        barrier.image = m_texture.get();
+        barrier.oldLayout = vk::ImageLayout::General;
+        barrier.newLayout = vk::ImageLayout::TransferDstOptimal;
+        barrier.srcAccessMask = vk::AccessFlags::ShaderRead | vk::AccessFlags::ShaderWrite;
+        barrier.dstAccessMask = vk::AccessFlags::TransferWrite;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.subresourceRange.aspectMask = vk::ImageAspectFlags::Color;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = 1;
+
+        commandBuffer.pipelineBarrier(vk::PipelineStageFlags::ComputeShader, vk::PipelineStageFlags::Transfer, vk::DependencyFlags::None,
+            {}, {}, { barrier });
+
         m_staging.transfer(openList.data(), openList.size() * sizeof(glm::ivec2), *m_inputBuffer);
+        m_staging.transfer(m_bitmap->data(), m_bitmap->size(), *m_texture, vk::ImageLayout::TransferDstOptimal);
         m_staging.flush(commandBuffer);
+
+        barrier.oldLayout = vk::ImageLayout::TransferDstOptimal;
+        barrier.newLayout = vk::ImageLayout::General;
+        barrier.srcAccessMask = vk::AccessFlags::TransferWrite;
+        barrier.dstAccessMask = vk::AccessFlags::ShaderRead | vk::AccessFlags::ShaderWrite;;
+
+        commandBuffer.pipelineBarrier(vk::PipelineStageFlags::Transfer, vk::PipelineStageFlags::ComputeShader, vk::DependencyFlags::None,
+            {}, {}, { barrier });
 
         record(commandBuffer, openList, color);
 
         commandBuffer.end();
 
         m_core->submitCompute(commandBuffer, &m_fences[index]);
+
+        m_fences[index].wait();
+        m_fences[index].reset();
+
+        readResult(openList, color);
+
         m_frame++;
     }
-
-    vk::Fence::wait(m_core->device(), m_fences, true);
-    readResult(openList, color);
 }
 
 struct PushConstants {
-    int32_t width;
-    int32_t height;
     uint32_t count;
     uint32_t targetLevel;
-    uint32_t color;
+    glm::vec3 color;
 };
 
 void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, Color32 color) {
@@ -117,19 +135,16 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::Compute, *m_mainPipelineLayout, 0, { m_pyramid->descriptorSet(), *m_descriptorSet }, {});
 
     PushConstants constants = {};
-    constants.width = static_cast<int32_t>(m_bitmap->width());
-    constants.height = static_cast<int32_t>(m_bitmap->height());
     constants.count = static_cast<uint32_t>(openList.size());
     constants.targetLevel = static_cast<uint32_t>(ceil(log2(openList.size())));
-    memcpy(&constants.color, &color, sizeof(Color32));
+    constants.color = glm::vec3{ color.r / 255.0f, color.g / 255.0f, color.b / 255.0f };
 
-    commandBuffer.pushConstants(*m_mainPipelineLayout, vk::ShaderStageFlags::Compute, 0, 5 * sizeof(uint32_t), &constants);
+    commandBuffer.pushConstants(*m_mainPipelineLayout, vk::ShaderStageFlags::Compute, 0, sizeof(PushConstants), &constants);
 
     uint32_t mainGroups = (static_cast<uint32_t>(openList.size()) / GROUP_SIZE) + 1;
     commandBuffer.dispatch(mainGroups, 1, 1);
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::Compute, *m_reducePipeline);
-    commandBuffer.pushConstants(*m_reducePipelineLayout, vk::ShaderStageFlags::Compute, 0, 4 * sizeof(uint32_t), &constants);
 
     vk::BufferMemoryBarrier barrier = {};
     barrier.buffer = &m_pyramid->buffers()[constants.targetLevel];
@@ -142,11 +157,10 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
 
     uint32_t currentCount = constants.count;
     for (uint32_t currentLevel = constants.targetLevel; currentLevel > 0; currentLevel--) {
-        currentCount = (currentCount / 2) + (currentCount % 2);
         constants.count = currentCount;
         constants.targetLevel = currentLevel - 1;
 
-        commandBuffer.pushConstants(*m_mainPipelineLayout, vk::ShaderStageFlags::Compute, 0, 4 * sizeof(uint32_t), &constants);
+        commandBuffer.pushConstants(*m_mainPipelineLayout, vk::ShaderStageFlags::Compute, 0, 2 * sizeof(uint32_t), &constants);
 
         uint32_t reduceGroups = (static_cast<uint32_t>(openList.size()) / GROUP_SIZE) + 1;
         commandBuffer.dispatch(reduceGroups, 1, 1);
@@ -155,25 +169,16 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
         barrier.size = m_pyramid->buffers()[constants.targetLevel].size();
         commandBuffer.pipelineBarrier(vk::PipelineStageFlags::ComputeShader, vk::PipelineStageFlags::ComputeShader, vk::DependencyFlags::None,
             {}, { barrier }, {});
+
+        currentCount = (currentCount / 2) + (currentCount % 2);
     }
-
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::Compute, *m_finishPipeline);
-    commandBuffer.pushConstants(*m_finishPipelineLayout, vk::ShaderStageFlags::Compute, 0, 5 * sizeof(uint32_t), &constants);
-    commandBuffer.dispatch(1, 1, 1);
-
-    barrier.buffer = m_outputBuffer.get();
-    barrier.srcAccessMask = vk::AccessFlags::ShaderWrite;
-    barrier.dstAccessMask = vk::AccessFlags::TransferRead;
-    barrier.size = m_outputBuffer->size();
-
-    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::ComputeShader, vk::PipelineStageFlags::Transfer, vk::DependencyFlags::None,
-        {}, { barrier }, {});
 
     vk::BufferCopy copy = {};
     copy.size = m_readBuffer->size();
-    commandBuffer.copyBuffer(*m_outputBuffer, *m_readBuffer, { copy });
+    commandBuffer.copyBuffer(m_pyramid->buffers()[0], *m_readBuffer, { copy });
 
     barrier.buffer = m_readBuffer.get();
+    barrier.size = m_readBuffer->size();
     barrier.srcAccessMask = vk::AccessFlags::TransferWrite;
     barrier.dstAccessMask = vk::AccessFlags::HostRead;
 
@@ -241,12 +246,33 @@ void ComputeGenerator::createTexture() {
     info.initialLayout = vk::ImageLayout::Undefined;
     info.mipLevels = 1;
     info.samples = vk::SampleCountFlags::_1;
-    info.usage = vk::ImageUsageFlags::Storage;
+    info.usage = vk::ImageUsageFlags::Storage | vk::ImageUsageFlags::TransferDst;
 
     m_texture = std::make_unique<vk::Image>(m_core->device(), info);
 
     Allocation alloc = m_allocator->allocate(m_texture->requirements(), vk::MemoryPropertyFlags::DeviceLocal, vk::MemoryPropertyFlags::DeviceLocal);
     m_texture->bind(*alloc.memory, alloc.size);
+
+    vk::CommandBuffer commandBuffer = m_core->getSingleUseCommandBuffer();
+
+    vk::ImageMemoryBarrier barrier = {};
+    barrier.image = m_texture.get();
+    barrier.oldLayout = vk::ImageLayout::Undefined;
+    barrier.newLayout = vk::ImageLayout::General;
+    barrier.srcAccessMask = vk::AccessFlags::None;
+    barrier.dstAccessMask = vk::AccessFlags::ShaderRead | vk::AccessFlags::ShaderWrite;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.subresourceRange.aspectMask = vk::ImageAspectFlags::Color;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+
+    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::TopOfPipe, vk::PipelineStageFlags::ComputeShader, vk::DependencyFlags::None,
+        {}, {}, { barrier });
+
+    m_core->submitSingleUseCommandBuffer(std::move(commandBuffer));
 }
 
 void ComputeGenerator::createTextureView() {
@@ -272,17 +298,6 @@ void ComputeGenerator::createInputBuffer() {
 
     Allocation alloc = m_allocator->allocate(m_inputBuffer->requirements(), vk::MemoryPropertyFlags::DeviceLocal, vk::MemoryPropertyFlags::DeviceLocal);
     m_inputBuffer->bind(*alloc.memory, alloc.offset);
-}
-
-void ComputeGenerator::createOutputBuffer() {
-    vk::BufferCreateInfo info = {};
-    info.size = sizeof(uint32_t);
-    info.usage = vk::BufferUsageFlags::StorageBuffer | vk::BufferUsageFlags::TransferSrc;
-
-    m_outputBuffer = std::make_unique<vk::Buffer>(m_core->device(), info);
-
-    Allocation alloc = m_allocator->allocate(m_outputBuffer->requirements(), vk::MemoryPropertyFlags::DeviceLocal, vk::MemoryPropertyFlags::DeviceLocal);
-    m_outputBuffer->bind(*alloc.memory, alloc.offset);
 }
 
 void ComputeGenerator::createReadBuffer() {
@@ -312,14 +327,8 @@ void ComputeGenerator::createDescriptorSetLayout() {
     binding2.descriptorCount = 1;
     binding2.stageFlags = vk::ShaderStageFlags::Compute;
 
-    vk::DescriptorSetLayoutBinding binding3 = {};
-    binding3.binding = 2;
-    binding3.descriptorType = vk::DescriptorType::StorageBuffer;
-    binding3.descriptorCount = 1;
-    binding3.stageFlags = vk::ShaderStageFlags::Compute;
-
     vk::DescriptorSetLayoutCreateInfo info = {};
-    info.bindings = { binding1, binding2, binding3 };
+    info.bindings = { binding1, binding2 };
 
     m_descriptorSetLayout = std::make_unique<vk::DescriptorSetLayout>(m_core->device(), info);
 }
@@ -331,7 +340,7 @@ void ComputeGenerator::createDescriptorPool() {
 
     vk::DescriptorPoolSize size2 = {};
     size2.type = vk::DescriptorType::StorageBuffer;
-    size2.descriptorCount = 2;
+    size2.descriptorCount = 1;
 
     vk::DescriptorPoolCreateInfo info = {};
     info.maxSets = 1;
@@ -353,13 +362,9 @@ void ComputeGenerator::writeDescriptors() {
     imageInfo.imageView = m_textureView.get();
     imageInfo.imageLayout = vk::ImageLayout::General;
 
-    vk::DescriptorBufferInfo bufferInfo1 = {};
-    bufferInfo1.buffer = m_inputBuffer.get();
-    bufferInfo1.range = m_inputBuffer->size();
-
-    vk::DescriptorBufferInfo bufferInfo2 = {};
-    bufferInfo2.buffer = m_outputBuffer.get();
-    bufferInfo2.range = m_outputBuffer->size();
+    vk::DescriptorBufferInfo bufferInfo = {};
+    bufferInfo.buffer = m_inputBuffer.get();
+    bufferInfo.range = m_inputBuffer->size();
 
     vk::WriteDescriptorSet write1 = {};
     write1.dstSet = m_descriptorSet.get();
@@ -370,16 +375,10 @@ void ComputeGenerator::writeDescriptors() {
     vk::WriteDescriptorSet write2 = {};
     write2.dstSet = m_descriptorSet.get();
     write2.dstBinding = 1;
-    write2.bufferInfo = { bufferInfo1 };
+    write2.bufferInfo = { bufferInfo };
     write2.descriptorType = vk::DescriptorType::StorageBuffer;
 
-    vk::WriteDescriptorSet write3 = {};
-    write3.dstSet = m_descriptorSet.get();
-    write3.dstBinding = 2;
-    write3.bufferInfo = { bufferInfo2 };
-    write3.descriptorType = vk::DescriptorType::StorageBuffer;
-
-    vk::DescriptorSet::update(m_core->device(), { write1, write2, write3 }, {});
+    vk::DescriptorSet::update(m_core->device(), { write1, write2 }, {});
 }
 
 void ComputeGenerator::createMainPipelineLayout() {
@@ -472,54 +471,9 @@ void ComputeGenerator::createReducePipeline() {
     m_reducePipeline = std::make_unique<vk::ComputePipeline>(m_core->device(), info);
 }
 
-void ComputeGenerator::createFinishPipelineLayout() {
-    vk::PushConstantRange range = {};
-    range.size = 5 * sizeof(uint32_t);
-    range.stageFlags = vk::ShaderStageFlags::Compute;
-
-    vk::PipelineLayoutCreateInfo info = {};
-    info.setLayouts = { m_pyramid->descriptorSetLayout(), *m_descriptorSetLayout };
-    info.pushConstantRanges = { range };
-
-    m_finishPipelineLayout = std::make_unique<vk::PipelineLayout>(m_core->device(), info);
-}
-
-void ComputeGenerator::createFinishPipeline() {
-    vk::ShaderModule module = loadShader(m_core->device(), "shaders/finish.comp.spv");
-
-    uint32_t specData[2] = { GROUP_SIZE, static_cast<uint32_t>(m_pyramid->buffers().size()) };
-
-    vk::SpecializationMapEntry entry1 = {};
-    entry1.constantID = 0;
-    entry1.size = sizeof(uint32_t);
-    entry1.offset = 0;
-
-    vk::SpecializationMapEntry entry2 = {};
-    entry2.constantID = 1;
-    entry2.size = sizeof(uint32_t);
-    entry2.offset = sizeof(uint32_t);
-
-    vk::SpecializationInfo specInfo = {};
-    specInfo.dataSize = sizeof(specData);
-    specInfo.data = specData;
-    specInfo.mapEntries = { entry1, entry2 };
-
-    vk::PipelineShaderStageCreateInfo shaderInfo = {};
-    shaderInfo.module = &module;
-    shaderInfo.name = "main";
-    shaderInfo.stage = vk::ShaderStageFlags::Compute;
-    shaderInfo.specializationInfo = &specInfo;
-
-    vk::ComputePipelineCreateInfo info = {};
-    info.stage = shaderInfo;
-    info.layout = m_finishPipelineLayout.get();
-
-    m_finishPipeline = std::make_unique<vk::ComputePipeline>(m_core->device(), info);
-}
-
 void ComputeGenerator::createFences() {
     vk::FenceCreateInfo info = {};
-    info.flags = vk::FenceCreateFlags::Signaled;
+    //info.flags = vk::FenceCreateFlags::Signaled;
 
     for (size_t i = 0; i < FRAMES; i++) {
         m_fences.emplace_back(m_core->device(), info);
