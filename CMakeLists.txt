@@ -37,19 +37,19 @@ add_custom_target(
 
 add_executable(VkColors
     main.cpp
-    core.cpp
-    bitmap.cpp
-    allocator.cpp
-    utilities.cpp
-    renderer.cpp
-    shufflesource.cpp
-    pyramid.cpp
-    computegenerator.cpp
-    wavegenerator.cpp
-    wavegenerator2.cpp
-    coralgenerator.cpp
-    staging.cpp
-    semaphore.cpp
+    Core.cpp
+    Bitmap.cpp
+    Allocator.cpp
+    Utilities.cpp
+    Renderer.cpp
+    ShuffleSource.cpp
+    Pyramid.cpp
+    ComputeGenerator.cpp
+    WaveGenerator.cpp
+    WaveGenerator2.cpp
+    CoralGenerator.cpp
+    Staging.cpp
+    Semaphore.cpp
 )
 target_include_directories(VkColors PUBLIC ${GLFW_INCLUDE} ${VULKAN_INCLUDE} ${VKW_INCLUDE} ${GLM_INCLUDE})
 target_link_libraries(VkColors ${GLFW_LIB} ${VULKAN_LIB} ${VKW_LIB})
