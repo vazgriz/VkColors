@@ -14,9 +14,9 @@ layout(set = 0, binding = 0) buffer Pyramid {
 } pyramid[pyramidLevels];
 
 layout(push_constant) uniform Info {
-    uint count;
-    uint targetLevel;
-    ivec3 color;
+    ivec4 color;
+    int count;
+    int targetLevel;
 } info;
 
 layout(set = 1, binding = 0, rgba8i) uniform iimage2D image;
@@ -60,7 +60,7 @@ void main() {
         ivec2 n = neighbors[i];
         ivec4 color = imageLoad(image, n);
         if (color.a != 0) {
-            scores[i] = length2(info.color - color.rgb);
+            scores[i] = length2(info.color.rgb - color.rgb);
         }
     }
 

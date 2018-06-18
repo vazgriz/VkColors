@@ -124,9 +124,9 @@ void ComputeGenerator::generatorLoop() {
 }
 
 struct PushConstants {
-    uint32_t count;
-    uint32_t targetLevel;
-    glm::ivec3 color;
+    glm::ivec4 color;
+    int32_t count;
+    int32_t targetLevel;
 };
 
 void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, Color32 color) {
@@ -137,7 +137,7 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
     PushConstants constants = {};
     constants.count = static_cast<uint32_t>(openList.size());
     constants.targetLevel = static_cast<uint32_t>(ceil(log2(openList.size())));
-    constants.color = glm::ivec3{ color.r, color.g, color.b };
+    constants.color = glm::ivec4{ color.r, color.g, color.b, 255 };
 
     commandBuffer.pushConstants(*m_mainPipelineLayout, vk::ShaderStageFlags::Compute, 0, sizeof(PushConstants), &constants);
 
@@ -160,7 +160,7 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
         constants.count = currentCount;
         constants.targetLevel = currentLevel - 1;
 
-        commandBuffer.pushConstants(*m_mainPipelineLayout, vk::ShaderStageFlags::Compute, 0, 2 * sizeof(uint32_t), &constants);
+        commandBuffer.pushConstants(*m_mainPipelineLayout, vk::ShaderStageFlags::Compute, 0, 2 * sizeof(int32_t), &constants.count);
 
         uint32_t reduceGroups = (static_cast<uint32_t>(currentCount) / GROUP_SIZE) + 1;
         commandBuffer.dispatch(reduceGroups, 1, 1);
@@ -383,7 +383,7 @@ void ComputeGenerator::writeDescriptors() {
 
 void ComputeGenerator::createMainPipelineLayout() {
     vk::PushConstantRange range = {};
-    range.size = 5 * sizeof(uint32_t);
+    range.size = sizeof(PushConstants);
     range.stageFlags = vk::ShaderStageFlags::Compute;
 
     vk::PipelineLayoutCreateInfo info = {};
@@ -428,7 +428,7 @@ void ComputeGenerator::createMainPipeline(const std::string& shader) {
 
 void ComputeGenerator::createReducePipelineLayout() {
     vk::PushConstantRange range = {};
-    range.size = 4 * sizeof(uint32_t);
+    range.size = 2 * sizeof(int32_t);
     range.stageFlags = vk::ShaderStageFlags::Compute;
 
     vk::PipelineLayoutCreateInfo info = {};
