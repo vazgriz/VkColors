@@ -46,6 +46,7 @@ add_executable(VkColors
     pyramid.cpp
     computegenerator.cpp
     wavegenerator.cpp
+    wavegenerator2.cpp
     coralgenerator.cpp
     staging.cpp
     semaphore.cpp
