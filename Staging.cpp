@@ -33,10 +33,14 @@ void Staging::transfer(void* data, size_t size, vk::Buffer& dstBuffer) {
 }
 
 void Staging::transfer(void* data, size_t size, vk::Image& dstImage, vk::ImageLayout imageLayout) {
-    size_t offset = align(ptr, 4);
-    memcpy(static_cast<char*>(m_mapping) + offset, data, size);
-    m_data.emplace_back(StagingData{ offset, size, nullptr, &dstImage, imageLayout });
-    ptr = offset + size;
+    transfer(data, size, dstImage, imageLayout, dstImage.extent(), {});
+}
+
+void Staging::transfer(void* data, size_t size, vk::Image& dstImage, vk::ImageLayout imageLayout, vk::Extent3D extent, vk::Offset3D offset) {
+    size_t bufferOffset = align(ptr, 4);
+    memcpy(static_cast<char*>(m_mapping) + bufferOffset, data, size);
+    m_data.emplace_back(StagingData{ bufferOffset, size, nullptr, &dstImage, imageLayout, extent, offset });
+    ptr = bufferOffset + size;
 }
 
 void Staging::flush(vk::CommandBuffer& commandBuffer) {
@@ -50,7 +54,8 @@ void Staging::flush(vk::CommandBuffer& commandBuffer) {
         } else if (transfer.dstImage != nullptr) {
             vk::BufferImageCopy copy = {};
             copy.bufferOffset = transfer.offset;
-            copy.imageExtent = transfer.dstImage->extent();
+            copy.imageOffset = transfer.imageOffset;
+            copy.imageExtent = transfer.imageExtent;
             copy.imageSubresource.aspectMask = vk::ImageAspectFlags::Color;
             copy.imageSubresource.baseArrayLayer = 0;
             copy.imageSubresource.layerCount = 1;

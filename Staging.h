@@ -7,6 +7,8 @@ struct StagingData {
     vk::Buffer* dstBuffer;
     vk::Image* dstImage;
     vk::ImageLayout imageLayout;
+    vk::Extent3D imageExtent;
+    vk::Offset3D imageOffset;
 };
 
 class Staging {
@@ -19,6 +21,7 @@ public:
 
     void transfer(void* data, size_t size, vk::Buffer& dstBuffer);
     void transfer(void* data, size_t size, vk::Image& dstImage, vk::ImageLayout imageLayout);
+    void transfer(void* data, size_t size, vk::Image& dstImage, vk::ImageLayout imageLayout, vk::Extent3D extent, vk::Offset3D offset);
     void flush(vk::CommandBuffer& commandBuffer);
 
 private:
