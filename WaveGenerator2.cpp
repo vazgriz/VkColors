@@ -13,7 +13,7 @@ WaveGenerator2::WaveGenerator2(ColorSource& source, Bitmap& bitmap) : m_scratch(
     }
 }
 
-WaveGenerator2::WaveGenerator2(WaveGenerator2&& other) : m_scratch(std::move(*other.m_bitmap)) {
+WaveGenerator2::WaveGenerator2(WaveGenerator2&& other) : m_scratch(std::move(other.m_scratch)) {
     *this = std::move(other);
 }
 
