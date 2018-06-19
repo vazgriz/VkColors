@@ -12,6 +12,7 @@
 #include "WaveGenerator2.h"
 #include "CoralGenerator.h"
 #include "Pyramid.h"
+#include "ColorQueue.h"
 
 int main() {
     auto last = std::chrono::system_clock::now();
@@ -24,11 +25,12 @@ int main() {
     Core core = Core(window);
     Allocator allocator = Allocator(core);
     Bitmap bitmap = Bitmap(512, 512);
-    Renderer renderer = Renderer(core, allocator, bitmap);
+    ColorQueue colorQueue;
+    Renderer renderer = Renderer(core, allocator, bitmap, colorQueue);
     ShuffleSource source = ShuffleSource(6);
     Pyramid pyramid = Pyramid(core, allocator, bitmap);
     //std::unique_ptr<Generator> generator = std::make_unique<ComputeGenerator>(core, allocator, source, bitmap, pyramid, "shaders/wave.comp.spv");
-    std::unique_ptr<Generator> generator = std::make_unique<WaveGenerator2>(source, bitmap);
+    std::unique_ptr<Generator> generator = std::make_unique<WaveGenerator2>(source, bitmap, colorQueue);
     generator->run();
 
     size_t frames = 0;

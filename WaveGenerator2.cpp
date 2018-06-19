@@ -1,8 +1,9 @@
 #include "WaveGenerator2.h"
 
-WaveGenerator2::WaveGenerator2(ColorSource& source, Bitmap& bitmap) : m_scratch(bitmap.width(), bitmap.height()) {
+WaveGenerator2::WaveGenerator2(ColorSource& source, Bitmap& bitmap, ColorQueue& colorQueue) : m_scratch(bitmap.width(), bitmap.height()) {
     m_source = &source;
     m_bitmap = &bitmap;
+    m_queue = &colorQueue;
     m_running = std::make_unique<std::atomic_bool>();
 
     glm::ivec2 pos = { static_cast<int>(m_bitmap->width() / 2), static_cast<int>(m_bitmap->height() / 2) };
@@ -68,6 +69,7 @@ size_t WaveGenerator2::score() {
 
 void WaveGenerator2::readResult(size_t result) {
     glm::ivec2 pos = m_openList[result];
+    m_queue->enqueue(pos, m_color);
     m_bitmap->getPixel(pos.x, pos.y) = m_color;
     addNeighborsToOpenSet(pos);
     updateNeighbors(pos);

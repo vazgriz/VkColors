@@ -1,14 +1,15 @@
 #pragma once
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
 #include "Core.h"
 #include "Allocator.h"
 #include "Bitmap.h"
 #include "Staging.h"
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
+#include "ColorQueue.h"
 
 class Renderer : public Observer {
 public:
-    Renderer(Core& core, Allocator& allocator, Bitmap& bitmap);
+    Renderer(Core& core, Allocator& allocator, Bitmap& bitmap, ColorQueue& colorQueue);
     Renderer(const Renderer& other) = delete;
     Renderer& operator = (const Renderer& other) = delete;
     Renderer(Renderer&& other);
@@ -22,6 +23,7 @@ private:
     Core* m_core;
     Allocator* m_allocator;
     Bitmap* m_bitmap;
+    ColorQueue* m_queue;
     Staging m_staging;
     int32_t m_width;
     int32_t m_height;

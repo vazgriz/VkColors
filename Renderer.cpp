@@ -32,10 +32,11 @@ struct Vertex {
     }
 };
 
-Renderer::Renderer(Core& core, Allocator& allocator, Bitmap& bitmap) : m_staging(core, allocator) {
+Renderer::Renderer(Core& core, Allocator& allocator, Bitmap& bitmap, ColorQueue& colorQueue) : m_staging(core, allocator) {
     m_core = &core;
     m_allocator = &allocator;
     m_bitmap = &bitmap;
+    m_queue = &colorQueue;
     m_width = static_cast<int32_t>(m_bitmap->width());
     m_height = static_cast<int32_t>(m_bitmap->height());
     m_core->registerObserver(this);
@@ -83,7 +84,21 @@ void Renderer::record(vk::CommandBuffer& commandBuffer) {
     commandBuffer.pipelineBarrier(vk::PipelineStageFlags::FragmentShader, vk::PipelineStageFlags::Transfer, vk::DependencyFlags::None,
         {}, {}, { barrier });
 
-    m_staging.transfer(m_bitmap->data(), m_bitmap->size(), *m_texture, vk::ImageLayout::TransferDstOptimal);
+    auto changes = m_queue->swap();
+    
+    for (auto item : changes) {
+        vk::Extent3D extent = {};
+        extent.width = 1;
+        extent.height = 1;
+        extent.depth = 1;
+    
+        vk::Offset3D offset = {};
+        offset.x = item.pos.x;
+        offset.y = item.pos.y;
+    
+        m_staging.transfer(&item.color, sizeof(Color32), *m_texture, vk::ImageLayout::TransferDstOptimal, extent, offset);
+    }
+
     m_staging.flush(commandBuffer);
 
     barrier.oldLayout = vk::ImageLayout::TransferDstOptimal;
