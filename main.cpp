@@ -28,8 +28,7 @@ int main() {
     ColorQueue colorQueue;
     Renderer renderer = Renderer(core, allocator, bitmap, colorQueue);
     ShuffleSource source = ShuffleSource(6);
-    Pyramid pyramid = Pyramid(core, allocator, bitmap);
-    std::unique_ptr<Generator> generator = std::make_unique<ComputeGenerator>(core, allocator, source, bitmap, colorQueue, pyramid, "shaders/wave.comp.spv");
+    std::unique_ptr<Generator> generator = std::make_unique<ComputeGenerator>(core, allocator, source, bitmap, colorQueue, "shaders/wave.comp.spv");
     generator->run();
 
     size_t frames = 0;

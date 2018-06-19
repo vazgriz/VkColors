@@ -18,7 +18,7 @@
 
 class ComputeGenerator : public Generator {
 public:
-    ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, Bitmap& bitmap, ColorQueue& colorQueue, Pyramid& pyramid, const std::string& shader);
+    ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, Bitmap& bitmap, ColorQueue& colorQueue, const std::string& shader);
     ComputeGenerator(const ComputeGenerator& other) = delete;
     ComputeGenerator& operator = (const ComputeGenerator& other) = delete;
     ComputeGenerator(ComputeGenerator&& other);
@@ -33,9 +33,9 @@ private:
     ColorSource* m_source;
     Bitmap* m_bitmap;
     ColorQueue* m_queue;
-    Pyramid* m_pyramid;
     Staging m_staging;
 
+    Pyramid m_pyramid;
     std::unique_ptr<vk::Image> m_texture;
     std::unique_ptr<vk::ImageView> m_textureView;
     std::unique_ptr<vk::Buffer> m_inputBuffer;
