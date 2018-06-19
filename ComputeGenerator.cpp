@@ -239,7 +239,7 @@ void ComputeGenerator::createCommandBuffers() {
 
 void ComputeGenerator::createTexture() {
     vk::ImageCreateInfo info = {};
-    info.format = vk::Format::R8G8B8A8_Unorm;
+    info.format = vk::Format::R8G8B8A8_Uint;
     info.extent = { static_cast<uint32_t>(m_bitmap->width()), static_cast<uint32_t>(m_bitmap->height()), 1 };
     info.arrayLayers = 1;
     info.imageType = vk::ImageType::_2D;
