@@ -57,6 +57,8 @@ void ComputeGenerator::generatorLoop() {
     size_t counter = 0;
     std::vector<glm::ivec2> openList;
     Color32 color;
+    bool hasChange = false;
+    glm::ivec2 changePos;
 
     while (*m_running) {
         openList.clear();
@@ -66,9 +68,6 @@ void ComputeGenerator::generatorLoop() {
 
         if (openList.size() == 0) break;
         if (!m_source->hasNext()) break;
-
-        color = m_source->getNext();
-        color.a = 255;
 
         size_t index = m_frame % FRAMES;
 
@@ -98,7 +97,20 @@ void ComputeGenerator::generatorLoop() {
             {}, {}, { barrier });
 
         m_staging.transfer(openList.data(), openList.size() * sizeof(glm::ivec2), *m_inputBuffer);
-        m_staging.transfer(m_bitmap->data(), m_bitmap->size(), *m_texture, vk::ImageLayout::TransferDstOptimal);
+
+        if (hasChange) {
+            vk::Extent3D extent = {};
+            extent.width = 1;
+            extent.height = 1;
+            extent.depth = 1;
+
+            vk::Offset3D offset = {};
+            offset.x = changePos.x;
+            offset.y = changePos.y;
+
+            m_staging.transfer(&color, sizeof(Color32), *m_texture, vk::ImageLayout::TransferDstOptimal, extent, offset);
+        }
+
         m_staging.flush(commandBuffer);
 
         barrier.oldLayout = vk::ImageLayout::TransferDstOptimal;
@@ -109,6 +121,9 @@ void ComputeGenerator::generatorLoop() {
         commandBuffer.pipelineBarrier(vk::PipelineStageFlags::Transfer, vk::PipelineStageFlags::ComputeShader, vk::DependencyFlags::None,
             {}, {}, { barrier });
 
+        color = m_source->getNext();
+        color.a = 255;
+
         record(commandBuffer, openList, color);
 
         commandBuffer.end();
@@ -118,7 +133,8 @@ void ComputeGenerator::generatorLoop() {
         m_fences[index].wait();
         m_fences[index].reset();
 
-        readResult(openList, color);
+        hasChange = true;
+        changePos = readResult(openList, color);
 
         m_frame++;
     }
@@ -187,7 +203,7 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
         {}, { barrier }, {});
 }
 
-void ComputeGenerator::readResult(std::vector<glm::ivec2>& openList, Color32 color) {
+glm::ivec2 ComputeGenerator::readResult(std::vector<glm::ivec2>& openList, Color32 color) {
     uint32_t result;
     memcpy(&result, m_resultMapping, sizeof(uint32_t));
     glm::ivec2 pos = openList[result];
@@ -195,6 +211,7 @@ void ComputeGenerator::readResult(std::vector<glm::ivec2>& openList, Color32 col
     m_bitmap->getPixel(pos.x, pos.y) = color;
     addNeighborsToOpenSet(pos);
     m_openSet.erase(pos);
+    return pos;
 }
 
 void ComputeGenerator::addToOpenSet(glm::ivec2 pos) {

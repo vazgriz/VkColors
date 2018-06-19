@@ -80,7 +80,7 @@ private:
 
     void addToOpenSet(glm::ivec2 pos);
     void addNeighborsToOpenSet(glm::ivec2 pos);
-    void readResult(std::vector<glm::ivec2>& openList, Color32 color);
+    glm::ivec2 readResult(std::vector<glm::ivec2>& openList, Color32 color);
 
     void generatorLoop();
 };
