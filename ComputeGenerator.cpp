@@ -6,11 +6,12 @@
 #define FRAMES 2
 #define GROUP_SIZE 64
 
-ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, Bitmap& bitmap, Pyramid& pyramid, const std::string& shader) : m_staging(core, allocator) {
+ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, Bitmap& bitmap, ColorQueue& colorQueue, Pyramid& pyramid, const std::string& shader) : m_staging(core, allocator) {
     m_core = &core;
     m_allocator = &allocator;
     m_source = &source;
     m_bitmap = &bitmap;
+    m_queue = &colorQueue;
     m_pyramid = &pyramid;
 
     m_running = std::make_unique<std::atomic_bool>();
@@ -190,6 +191,7 @@ void ComputeGenerator::readResult(std::vector<glm::ivec2>& openList, Color32 col
     uint32_t result;
     memcpy(&result, m_resultMapping, sizeof(uint32_t));
     glm::ivec2 pos = openList[result];
+    m_queue->enqueue(pos, color);
     m_bitmap->getPixel(pos.x, pos.y) = color;
     addNeighborsToOpenSet(pos);
     m_openSet.erase(pos);

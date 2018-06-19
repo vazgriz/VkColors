@@ -14,10 +14,11 @@
 #include "Pyramid.h"
 #include "Staging.h"
 #include "Utilities.h"
+#include "ColorQueue.h"
 
 class ComputeGenerator : public Generator {
 public:
-    ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, Bitmap& bitmap, Pyramid& pyramid, const std::string& shader);
+    ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, Bitmap& bitmap, ColorQueue& colorQueue, Pyramid& pyramid, const std::string& shader);
     ComputeGenerator(const ComputeGenerator& other) = delete;
     ComputeGenerator& operator = (const ComputeGenerator& other) = delete;
     ComputeGenerator(ComputeGenerator&& other);
@@ -31,6 +32,7 @@ private:
     Allocator* m_allocator;
     ColorSource* m_source;
     Bitmap* m_bitmap;
+    ColorQueue* m_queue;
     Pyramid* m_pyramid;
     Staging m_staging;
 
