@@ -19,10 +19,12 @@ public:
 
     void enqueue(glm::ivec2 pos, Color32 color);
     const std::vector<Item>& swap();
+    size_t totalCount() const { return m_totalCount; }
 
 private:
     std::unique_ptr<std::mutex> m_mutex;
     std::vector<Item> m_buffers[2];
     std::vector<Item>* m_front;
     std::vector<Item>* m_back;
+    size_t m_totalCount;
 };

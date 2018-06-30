@@ -32,6 +32,7 @@ int main() {
     generator->run();
 
     size_t frames = 0;
+    size_t lastCount = 0;
 
     glfwShowWindow(window);
     while (!glfwWindowShouldClose(window)) {
@@ -44,12 +45,17 @@ int main() {
         frames++;
         auto now = std::chrono::system_clock::now();
         std::chrono::duration<float> elapsed = now - last;
+        size_t totalCount = colorQueue.totalCount();
+        size_t pixelsAdded = totalCount - lastCount;
+
         if (elapsed.count() > 0.25f) {
             std::stringstream builder;
-            builder << "Colors (" << std::setprecision(3) << static_cast<double>(frames) / elapsed.count() << " fps)";
+            builder << std::setprecision(0) << std::fixed;
+            builder << "Colors - " << static_cast<double>(frames) / elapsed.count() << " fps " << static_cast<double>(pixelsAdded) / elapsed.count() << " pps";
             glfwSetWindowTitle(window, builder.str().c_str());
             frames = 0;
             last = now;
+            lastCount = totalCount;
         }
     }
 

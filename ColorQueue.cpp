@@ -4,6 +4,7 @@ ColorQueue::ColorQueue() {
     m_mutex = std::make_unique<std::mutex>();
     m_front = &m_buffers[0];
     m_back = &m_buffers[1];
+    m_totalCount = 0;
 }
 
 ColorQueue::ColorQueue(ColorQueue&& other) {
@@ -18,6 +19,7 @@ void ColorQueue::enqueue(glm::ivec2 pos, Color32 color) {
 const std::vector<ColorQueue::Item>& ColorQueue::swap() {
     std::lock_guard<std::mutex> lock(*m_mutex);
     std::swap(m_front, m_back);
+    m_totalCount += m_front->size();
     m_front->clear();
     return *m_back;
 }
