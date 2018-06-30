@@ -10,10 +10,11 @@
 #include "ColorSource.h"
 #include "Bitmap.h"
 #include "Utilities.h"
+#include "ColorQueue.h"
 
 class CoralGenerator : public Generator {
 public:
-    CoralGenerator(ColorSource& source, Bitmap& bitmap);
+    CoralGenerator(ColorSource& source, Bitmap& bitmap, ColorQueue& colorQueue);
     CoralGenerator(const CoralGenerator& other) = delete;
     CoralGenerator& operator = (const CoralGenerator& other) = delete;
     CoralGenerator(CoralGenerator&& other);
@@ -25,6 +26,7 @@ public:
 private:
     ColorSource * m_source;
     Bitmap* m_bitmap;
+    ColorQueue* m_queue;
     std::thread m_mainThread;
     std::unique_ptr<std::atomic_bool> m_running;
     std::unordered_set<glm::ivec2> m_openSet;

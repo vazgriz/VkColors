@@ -1,8 +1,9 @@
 #include "CoralGenerator.h"
 
-CoralGenerator::CoralGenerator(ColorSource& source, Bitmap& bitmap) {
+CoralGenerator::CoralGenerator(ColorSource& source, Bitmap& bitmap, ColorQueue& colorQueue) {
     m_source = &source;
     m_bitmap = &bitmap;
+    m_queue = &colorQueue;
     m_running = std::make_unique<std::atomic_bool>();
 
     glm::ivec2 pos = { static_cast<int>(m_bitmap->width() / 2), static_cast<int>(m_bitmap->height() / 2) };
@@ -99,6 +100,7 @@ size_t CoralGenerator::score() {
 
 void CoralGenerator::readResult(size_t result) {
     glm::ivec2 pos = m_openList[result];
+    m_queue->enqueue(pos, m_color);
     m_bitmap->getPixel(pos.x, pos.y) = m_color;
     addNeighborsToOpenSet(pos);
     m_openSet.erase(pos);

@@ -10,10 +10,11 @@
 #include "ColorSource.h"
 #include "Bitmap.h"
 #include "Utilities.h"
+#include "ColorQueue.h"
 
 class WaveGenerator : public Generator {
 public:
-    WaveGenerator(ColorSource& source, Bitmap& bitmap);
+    WaveGenerator(ColorSource& source, Bitmap& bitmap, ColorQueue& colorQueue);
     WaveGenerator(const WaveGenerator& other) = delete;
     WaveGenerator& operator = (const WaveGenerator& other) = delete;
     WaveGenerator(WaveGenerator&& other);
@@ -25,6 +26,7 @@ public:
 private:
     ColorSource* m_source;
     Bitmap* m_bitmap;
+    ColorQueue* m_queue;
     std::thread m_mainThread;
     std::unique_ptr<std::atomic_bool> m_running;
     std::unordered_set<glm::ivec2> m_openSet;
