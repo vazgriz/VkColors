@@ -58,7 +58,7 @@ void Core::acquire() {
         }
     }
 
-    m_imageIndex = m_swapchain->acquireNextImage(~0, m_acquireSem.get(), nullptr);
+    m_swapchain->acquireNextImage(~0, m_acquireSem.get(), nullptr, m_imageIndex);
     m_commandBuffer = &m_commandBuffers[m_imageIndex];
     m_fences[m_imageIndex].wait();
     m_fences[m_imageIndex].reset();
