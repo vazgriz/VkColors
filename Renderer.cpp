@@ -32,13 +32,11 @@ struct Vertex {
     }
 };
 
-Renderer::Renderer(Core& core, Allocator& allocator, Bitmap& bitmap, ColorQueue& colorQueue) : m_staging(core, allocator) {
+Renderer::Renderer(Core& core, Allocator& allocator, glm::ivec2 size, ColorQueue& colorQueue) : m_staging(core, allocator) {
     m_core = &core;
     m_allocator = &allocator;
-    m_bitmap = &bitmap;
     m_queue = &colorQueue;
-    m_width = static_cast<int32_t>(m_bitmap->width());
-    m_height = static_cast<int32_t>(m_bitmap->height());
+    m_size = size;
     m_core->registerObserver(this);
 
     vk::CommandBuffer commandBuffer = m_core->getSingleUseCommandBuffer();
@@ -131,10 +129,10 @@ void Renderer::onResize(int width, int height) {
 
 void Renderer::createVertexBuffer(vk::CommandBuffer& commandBuffer) {
     std::vector<Vertex> vertices = {
-        { { -m_width / 2, -m_height / 2, 0 }, { 0, 0 } },
-        { {  m_width / 2, -m_height / 2, 0 }, { 1, 0 } },
-        { { -m_width / 2,  m_height / 2, 0 }, { 0, 1 } },
-        { {  m_width / 2,  m_height / 2, 0 }, { 1, 1 } },
+        { { -m_size.x / 2, -m_size.y / 2, 0 }, { 0, 0 } },
+        { {  m_size.x / 2, -m_size.y / 2, 0 }, { 1, 0 } },
+        { { -m_size.x / 2,  m_size.y / 2, 0 }, { 0, 1 } },
+        { {  m_size.x / 2,  m_size.y / 2, 0 }, { 1, 1 } },
     };
 
     vk::BufferCreateInfo info = {};
@@ -169,8 +167,8 @@ void Renderer::createIndexBuffer(vk::CommandBuffer& commandBuffer) {
 
 void Renderer::createTexture(vk::CommandBuffer& commandBuffer) {
     vk::ImageCreateInfo info = {};
-    info.extent.width = static_cast<uint32_t>(m_bitmap->width());
-    info.extent.height = static_cast<uint32_t>(m_bitmap->height());
+    info.extent.width = static_cast<uint32_t>(m_size.x);
+    info.extent.height = static_cast<uint32_t>(m_size.y);
     info.extent.depth = 1;
     info.format = vk::Format::R8G8B8A8_Unorm;
     info.initialLayout = vk::ImageLayout::Undefined;

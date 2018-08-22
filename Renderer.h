@@ -9,7 +9,7 @@
 
 class Renderer : public Observer {
 public:
-    Renderer(Core& core, Allocator& allocator, Bitmap& bitmap, ColorQueue& colorQueue);
+    Renderer(Core& core, Allocator& allocator, glm::ivec2 size, ColorQueue& colorQueue);
     Renderer(const Renderer& other) = delete;
     Renderer& operator = (const Renderer& other) = delete;
     Renderer(Renderer&& other);
@@ -22,11 +22,9 @@ public:
 private:
     Core* m_core;
     Allocator* m_allocator;
-    Bitmap* m_bitmap;
     ColorQueue* m_queue;
     Staging m_staging;
-    int32_t m_width;
-    int32_t m_height;
+    glm::ivec2 m_size;
     std::unique_ptr<vk::Buffer> m_vertexBuffer;
     Allocation m_vertexAlloc;
     std::unique_ptr<vk::Buffer> m_indexBuffer;

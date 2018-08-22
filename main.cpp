@@ -22,11 +22,12 @@ int main() {
     glfwWindowHint(GLFW_VISIBLE, 0);
     GLFWwindow* window = glfwCreateWindow(800, 600, "Colors", nullptr, nullptr);
 
+    glm::ivec2 size = { 512, 512 };
     Core core = Core(window);
     Allocator allocator = Allocator(core);
-    Bitmap bitmap = Bitmap(512, 512);
+    Bitmap bitmap = Bitmap(size.x, size.y);
     ColorQueue colorQueue;
-    Renderer renderer = Renderer(core, allocator, bitmap, colorQueue);
+    Renderer renderer = Renderer(core, allocator, size, colorQueue);
     ShuffleSource source = ShuffleSource(6);
     std::unique_ptr<Generator> generator = std::make_unique<ComputeGenerator>(core, allocator, source, bitmap, colorQueue, "shaders/wave.comp.spv");
     generator->run();
