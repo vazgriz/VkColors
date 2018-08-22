@@ -33,7 +33,9 @@ ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource
 
     glm::ivec2 pos = { static_cast<int>(m_bitmap->width() / 2), static_cast<int>(m_bitmap->height() / 2) };
     if (m_source->hasNext()) {
-        m_bitmap->getPixel(pos.x, pos.y) = m_source->getNext();
+        Color32 color = m_source->getNext();
+        m_queue.push({ color, pos });
+        m_colorQueue->enqueue(pos, color);
         addNeighborsToOpenSet(pos);
     }
 }
@@ -56,8 +58,6 @@ void ComputeGenerator::generatorLoop() {
     size_t counter = 0;
     std::vector<glm::ivec2> openList;
     Color32 color;
-    bool hasChange = false;
-    glm::ivec2 changePos;
 
     while (*m_running) {
         openList.clear();
@@ -97,15 +97,18 @@ void ComputeGenerator::generatorLoop() {
 
         m_staging.transfer(openList.data(), openList.size() * sizeof(glm::ivec2), *m_inputBuffer);
 
-        if (hasChange) {
+        while (m_queue.size() > 0) {
+            auto item = m_queue.front();
+            m_queue.pop();
+
             vk::Extent3D extent = {};
             extent.width = 1;
             extent.height = 1;
             extent.depth = 1;
 
             vk::Offset3D offset = {};
-            offset.x = changePos.x;
-            offset.y = changePos.y;
+            offset.x = item.pos.x;
+            offset.y = item.pos.y;
 
             m_staging.transfer(&color, sizeof(Color32), *m_texture, vk::ImageLayout::TransferDstOptimal, extent, offset);
         }
@@ -132,8 +135,7 @@ void ComputeGenerator::generatorLoop() {
         m_fences[index].wait();
         m_fences[index].reset();
 
-        hasChange = true;
-        changePos = readResult(openList, color);
+        m_queue.push({ color, readResult(openList, color) });
 
         m_frame++;
     }

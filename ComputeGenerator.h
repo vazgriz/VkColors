@@ -17,6 +17,11 @@
 #include "ColorQueue.h"
 
 class ComputeGenerator : public Generator {
+    struct ColorPos {
+        Color32 color;
+        glm::ivec2 pos;
+    };
+
 public:
     ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, Bitmap& bitmap, ColorQueue& colorQueue, const std::string& shader);
     ComputeGenerator(const ComputeGenerator& other) = delete;
@@ -60,6 +65,7 @@ private:
 
     std::thread m_thread;
     std::unique_ptr<std::atomic_bool> m_running;
+    std::queue<ColorPos> m_queue;
 
     void record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, Color32 color);
     void createCommandPool();
