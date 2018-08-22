@@ -11,7 +11,7 @@ ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource
     m_allocator = &allocator;
     m_source = &source;
     m_bitmap = &bitmap;
-    m_queue = &colorQueue;
+    m_colorQueue = &colorQueue;
 
     m_running = std::make_unique<std::atomic_bool>();
 
@@ -206,7 +206,7 @@ glm::ivec2 ComputeGenerator::readResult(std::vector<glm::ivec2>& openList, Color
     uint32_t result;
     memcpy(&result, m_resultMapping, sizeof(uint32_t));
     glm::ivec2 pos = openList[result];
-    m_queue->enqueue(pos, color);
+    m_colorQueue->enqueue(pos, color);
     m_bitmap->getPixel(pos.x, pos.y) = color;
     addNeighborsToOpenSet(pos);
     m_openSet.erase(pos);

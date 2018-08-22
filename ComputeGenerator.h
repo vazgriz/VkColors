@@ -32,7 +32,7 @@ private:
     Allocator* m_allocator;
     ColorSource* m_source;
     Bitmap* m_bitmap;
-    ColorQueue* m_queue;
+    ColorQueue* m_colorQueue;
     Staging m_staging;
 
     Pyramid m_pyramid;
