@@ -57,8 +57,6 @@ private:
     std::unique_ptr<vk::Pipeline> m_mainPipeline;
     std::unique_ptr<vk::PipelineLayout> m_reducePipelineLayout;
     std::unique_ptr<vk::Pipeline> m_reducePipeline;
-    std::unique_ptr<vk::PipelineLayout> m_finishPipelineLayout;
-    std::unique_ptr<vk::Pipeline> m_finishPipeline;
     std::vector<vk::Fence> m_fences;
     size_t m_frame = 0;
 
