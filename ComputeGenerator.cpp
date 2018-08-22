@@ -314,7 +314,7 @@ void ComputeGenerator::createTextureView() {
 
 void ComputeGenerator::createInputBuffer() {
     vk::BufferCreateInfo info = {};
-    info.size = sizeof(glm::uvec2) * m_size.x * m_size.y;
+    info.size = sizeof(glm::ivec2) * m_size.x * m_size.y;
     info.usage = vk::BufferUsageFlags::StorageBuffer | vk::BufferUsageFlags::TransferDst;
 
     m_inputBuffer = std::make_unique<vk::Buffer>(m_core->device(), info);
