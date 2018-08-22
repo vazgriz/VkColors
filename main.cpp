@@ -11,7 +11,6 @@
 #include "WaveGenerator.h"
 #include "WaveGenerator2.h"
 #include "CoralGenerator.h"
-#include "Pyramid.h"
 #include "ColorQueue.h"
 
 int main() {

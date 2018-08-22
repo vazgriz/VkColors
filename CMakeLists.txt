@@ -43,7 +43,6 @@ add_executable(VkColors WIN32
     Utilities.cpp
     Renderer.cpp
     ShuffleSource.cpp
-    Pyramid.cpp
     ComputeGenerator.cpp
     WaveGenerator.cpp
     WaveGenerator2.cpp

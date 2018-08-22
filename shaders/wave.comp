@@ -4,16 +4,11 @@
 #define UMAX uint(-1)
 
 layout(local_size_x_id = 0) in;
-layout (constant_id = 1) const int pyramidLevels = 24;
 
 struct Element {
     uint index;
     uint score;
 };
-
-layout(set = 0, binding = 0) buffer Pyramid {
-    Element[] elements;
-} pyramid[pyramidLevels];
 
 layout(push_constant) uniform Info {
     ivec4 color;
@@ -21,11 +16,15 @@ layout(push_constant) uniform Info {
     int targetLevel;
 } info;
 
-layout(set = 1, binding = 0, rgba8i) uniform iimage2D image;
+layout(set = 0, binding = 0, rgba8i) uniform iimage2D image;
 
-layout(set = 1, binding = 1) buffer Input {
+layout(set = 0, binding = 1) buffer Input {
     ivec2[] data;
 } inputData;
+
+layout(set = 0, binding = 2) buffer Output {
+    uint[] scores;
+} outputData;
 
 int length2(ivec3 v) {
     return v.x * v.x + v.y * v.y + v.z * v.z;
@@ -33,10 +32,7 @@ int length2(ivec3 v) {
 
 void main() {
     if (gl_GlobalInvocationID.x >= info.count) {
-        Element empty;
-        empty.index = 0;
-        empty.score = uint(-1);
-        pyramid[info.targetLevel].elements[gl_GlobalInvocationID.x] = empty;
+        outputData.scores[gl_GlobalInvocationID.x] = UMAX;
         return;
     }
 
@@ -70,8 +66,5 @@ void main() {
         }
     }
 
-    Element e;
-    e.score = realScore;
-    e.index = gl_GlobalInvocationID.x;
-    pyramid[info.targetLevel].elements[gl_GlobalInvocationID.x] = e;
+    outputData.scores[gl_GlobalInvocationID.x] = realScore;
 }

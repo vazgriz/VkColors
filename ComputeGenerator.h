@@ -11,7 +11,6 @@
 #include "Allocator.h"
 #include "ColorSource.h"
 #include "Bitmap.h"
-#include "Pyramid.h"
 #include "Staging.h"
 #include "Utilities.h"
 #include "ColorQueue.h"
@@ -41,7 +40,6 @@ private:
 
     Staging m_staging;
     Bitmap m_bitmap;
-    Pyramid m_pyramid;
     std::unique_ptr<vk::Image> m_texture;
     std::unique_ptr<vk::ImageView> m_textureView;
     std::unique_ptr<vk::Buffer> m_inputBuffer;
@@ -55,8 +53,6 @@ private:
     std::vector<vk::CommandBuffer> m_commandBuffers;
     std::unique_ptr<vk::PipelineLayout> m_mainPipelineLayout;
     std::unique_ptr<vk::Pipeline> m_mainPipeline;
-    std::unique_ptr<vk::PipelineLayout> m_reducePipelineLayout;
-    std::unique_ptr<vk::Pipeline> m_reducePipeline;
     std::vector<vk::Fence> m_fences;
     size_t m_frame = 0;
 
@@ -79,8 +75,6 @@ private:
     void writeDescriptors();
     void createMainPipelineLayout();
     void createMainPipeline(const std::string& shader);
-    void createReducePipelineLayout();
-    void createReducePipeline();
     void createFences();
 
     void addToOpenSet(glm::ivec2 pos);
