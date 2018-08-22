@@ -46,6 +46,7 @@ Renderer::Renderer(Core& core, Allocator& allocator, Bitmap& bitmap, ColorQueue&
     createVertexBuffer(commandBuffer);
     createIndexBuffer(commandBuffer);
     createTexture(commandBuffer);
+    m_staging.flush(commandBuffer);
 
     m_core->submitSingleUseCommandBuffer(std::move(commandBuffer));
 
@@ -187,9 +188,9 @@ void Renderer::createTexture(vk::CommandBuffer& commandBuffer) {
     vk::ImageMemoryBarrier barrier = {};
     barrier.image = m_texture.get();
     barrier.oldLayout = vk::ImageLayout::Undefined;
-    barrier.newLayout = vk::ImageLayout::TransferDstOptimal;
+    barrier.newLayout = vk::ImageLayout::ShaderReadOnlyOptimal;
     barrier.srcAccessMask = vk::AccessFlags::None;
-    barrier.dstAccessMask = vk::AccessFlags::TransferWrite;
+    barrier.dstAccessMask = vk::AccessFlags::ShaderRead;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.subresourceRange.aspectMask = vk::ImageAspectFlags::Color;
@@ -198,18 +199,7 @@ void Renderer::createTexture(vk::CommandBuffer& commandBuffer) {
     barrier.subresourceRange.baseMipLevel = 0;
     barrier.subresourceRange.levelCount = 1;
 
-    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::TopOfPipe, vk::PipelineStageFlags::Transfer, vk::DependencyFlags::None,
-        {}, {}, { barrier });
-
-    m_staging.transfer(m_bitmap->data(), m_bitmap->size(), *m_texture, vk::ImageLayout::TransferDstOptimal);
-    m_staging.flush(commandBuffer);
-
-    barrier.oldLayout = vk::ImageLayout::TransferDstOptimal;
-    barrier.newLayout = vk::ImageLayout::ShaderReadOnlyOptimal;
-    barrier.srcAccessMask = vk::AccessFlags::TransferWrite;
-    barrier.dstAccessMask = vk::AccessFlags::ShaderRead;
-
-    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::Transfer, vk::PipelineStageFlags::FragmentShader, vk::DependencyFlags::None,
+    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::TopOfPipe, vk::PipelineStageFlags::FragmentShader, vk::DependencyFlags::None,
         {}, {}, { barrier });
 }
 
