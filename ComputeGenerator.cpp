@@ -274,7 +274,7 @@ void ComputeGenerator::createTexture() {
     m_texture = std::make_unique<vk::Image>(m_core->device(), info);
 
     Allocation alloc = m_allocator->allocate(m_texture->requirements(), vk::MemoryPropertyFlags::DeviceLocal, vk::MemoryPropertyFlags::DeviceLocal);
-    m_texture->bind(*alloc.memory, alloc.size);
+    m_texture->bind(*alloc.memory, alloc.offset);
 
     vk::CommandBuffer commandBuffer = m_core->getSingleUseCommandBuffer();
 
