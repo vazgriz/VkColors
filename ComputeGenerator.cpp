@@ -6,11 +6,12 @@
 #define FRAMES 2
 #define GROUP_SIZE 64
 
-ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, Bitmap& bitmap, ColorQueue& colorQueue, const std::string& shader) : m_staging(core, allocator), m_pyramid(core, allocator, bitmap) {
+ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, glm::ivec2 size, ColorQueue& colorQueue, const std::string& shader)
+    : m_bitmap(size.x, size.y), m_staging(core, allocator), m_pyramid(core, allocator, m_bitmap) {
     m_core = &core;
     m_allocator = &allocator;
     m_source = &source;
-    m_bitmap = &bitmap;
+    m_size = size;
     m_colorQueue = &colorQueue;
 
     m_running = std::make_unique<std::atomic_bool>();
@@ -31,7 +32,7 @@ ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource
     createReducePipeline();
     createFences();
 
-    glm::ivec2 pos = { static_cast<int>(m_bitmap->width() / 2), static_cast<int>(m_bitmap->height() / 2) };
+    glm::ivec2 pos = m_size / 2;
     if (m_source->hasNext()) {
         Color32 color = m_source->getNext();
         m_queue.push({ color, pos });
@@ -40,7 +41,7 @@ ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource
     }
 }
 
-ComputeGenerator::ComputeGenerator(ComputeGenerator&& other) : m_staging(std::move(other.m_staging)), m_pyramid(std::move(other.m_pyramid)) {
+ComputeGenerator::ComputeGenerator(ComputeGenerator&& other) : m_bitmap(std::move(other.m_bitmap)), m_staging(std::move(other.m_staging)), m_pyramid(std::move(other.m_pyramid)) {
     *this = std::move(other);
 }
 
@@ -211,7 +212,7 @@ glm::ivec2 ComputeGenerator::readResult(std::vector<glm::ivec2>& openList, Color
     memcpy(&result, m_resultMapping, sizeof(uint32_t));
     glm::ivec2 pos = openList[result];
     m_colorQueue->enqueue(pos, color);
-    m_bitmap->getPixel(pos.x, pos.y) = color;
+    m_bitmap.getPixel(pos.x, pos.y) = color;
     addNeighborsToOpenSet(pos);
     m_openSet.erase(pos);
     return pos;
@@ -236,8 +237,8 @@ void ComputeGenerator::addNeighborsToOpenSet(glm::ivec2 pos) {
     for (size_t i = 0; i < 8; i++) {
         auto& n = neighbors[i];
         if (n.x >= 0 && n.y >= 0
-            && n.x < m_bitmap->width() && n.y < m_bitmap->height()
-            && m_bitmap->getPixel(n.x, n.y).a == 0) {
+            && n.x < m_bitmap.width() && n.y < m_bitmap.height()
+            && m_bitmap.getPixel(n.x, n.y).a == 0) {
             addToOpenSet(n);
         }
     }
@@ -262,7 +263,7 @@ void ComputeGenerator::createCommandBuffers() {
 void ComputeGenerator::createTexture() {
     vk::ImageCreateInfo info = {};
     info.format = vk::Format::R8G8B8A8_Uint;
-    info.extent = { static_cast<uint32_t>(m_bitmap->width()), static_cast<uint32_t>(m_bitmap->height()), 1 };
+    info.extent = { static_cast<uint32_t>(m_size.x), static_cast<uint32_t>(m_size.y), 1 };
     info.arrayLayers = 1;
     info.imageType = vk::ImageType::_2D;
     info.initialLayout = vk::ImageLayout::Undefined;
@@ -313,7 +314,7 @@ void ComputeGenerator::createTextureView() {
 
 void ComputeGenerator::createInputBuffer() {
     vk::BufferCreateInfo info = {};
-    info.size = sizeof(glm::uvec2) * m_bitmap->width() * m_bitmap->height();
+    info.size = sizeof(glm::uvec2) * m_size.x * m_size.y;
     info.usage = vk::BufferUsageFlags::StorageBuffer | vk::BufferUsageFlags::TransferDst;
 
     m_inputBuffer = std::make_unique<vk::Buffer>(m_core->device(), info);

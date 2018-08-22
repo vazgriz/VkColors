@@ -23,7 +23,7 @@ class ComputeGenerator : public Generator {
     };
 
 public:
-    ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, Bitmap& bitmap, ColorQueue& colorQueue, const std::string& shader);
+    ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, glm::ivec2 size, ColorQueue& colorQueue, const std::string& shader);
     ComputeGenerator(const ComputeGenerator& other) = delete;
     ComputeGenerator& operator = (const ComputeGenerator& other) = delete;
     ComputeGenerator(ComputeGenerator&& other);
@@ -36,10 +36,11 @@ private:
     Core* m_core;
     Allocator* m_allocator;
     ColorSource* m_source;
-    Bitmap* m_bitmap;
     ColorQueue* m_colorQueue;
-    Staging m_staging;
+    glm::ivec2 m_size;
 
+    Staging m_staging;
+    Bitmap m_bitmap;
     Pyramid m_pyramid;
     std::unique_ptr<vk::Image> m_texture;
     std::unique_ptr<vk::ImageView> m_textureView;

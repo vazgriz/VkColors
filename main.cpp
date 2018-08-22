@@ -25,11 +25,10 @@ int main() {
     glm::ivec2 size = { 512, 512 };
     Core core = Core(window);
     Allocator allocator = Allocator(core);
-    Bitmap bitmap = Bitmap(size.x, size.y);
     ColorQueue colorQueue;
     Renderer renderer = Renderer(core, allocator, size, colorQueue);
     ShuffleSource source = ShuffleSource(6);
-    std::unique_ptr<Generator> generator = std::make_unique<ComputeGenerator>(core, allocator, source, bitmap, colorQueue, "shaders/wave.comp.spv");
+    std::unique_ptr<Generator> generator = std::make_unique<ComputeGenerator>(core, allocator, source, size, colorQueue, "shaders/wave.comp.spv");
     generator->run();
 
     size_t frames = 0;
