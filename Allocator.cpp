@@ -36,8 +36,8 @@ Allocation Allocator::tryAlloc(uint32_t type, vk::MemoryRequirements requirement
         auto& page = pages.back();
 
         size_t aligned = align(page.ptr, requirements.alignment);
-        if (page.ptr + aligned + requirements.size <= page.size) {
-            page.ptr += aligned + requirements.size;
+        if (aligned + requirements.size <= page.size) {
+            page.ptr = aligned + requirements.size;
             return { page.memory.get(), requirements.size, aligned };
         }
     }
