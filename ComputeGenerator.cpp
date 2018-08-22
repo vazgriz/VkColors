@@ -167,8 +167,10 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
     vk::BufferMemoryBarrier barrier = {};
     barrier.buffer = &m_pyramid.buffers()[constants.targetLevel];
     barrier.size = m_pyramid.buffers()[constants.targetLevel].size();
-    barrier.dstAccessMask = vk::AccessFlags::ShaderWrite;
-    barrier.srcAccessMask = vk::AccessFlags::ShaderRead;
+    barrier.srcAccessMask = vk::AccessFlags::ShaderWrite;
+    barrier.dstAccessMask = vk::AccessFlags::ShaderRead;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
     commandBuffer.pipelineBarrier(vk::PipelineStageFlags::ComputeShader, vk::PipelineStageFlags::ComputeShader, vk::DependencyFlags::None,
         {}, { barrier }, {});
