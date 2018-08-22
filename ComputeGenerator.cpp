@@ -338,36 +338,36 @@ void ComputeGenerator::createReadBuffer() {
 }
 
 void ComputeGenerator::createDescriptorSetLayout() {
+    vk::DescriptorSetLayoutBinding binding0 = {};
+    binding0.binding = 0;
+    binding0.descriptorType = vk::DescriptorType::StorageImage;
+    binding0.descriptorCount = 1;
+    binding0.stageFlags = vk::ShaderStageFlags::Compute;
+
     vk::DescriptorSetLayoutBinding binding1 = {};
-    binding1.binding = 0;
-    binding1.descriptorType = vk::DescriptorType::StorageImage;
+    binding1.binding = 1;
+    binding1.descriptorType = vk::DescriptorType::StorageBuffer;
     binding1.descriptorCount = 1;
     binding1.stageFlags = vk::ShaderStageFlags::Compute;
 
-    vk::DescriptorSetLayoutBinding binding2 = {};
-    binding2.binding = 1;
-    binding2.descriptorType = vk::DescriptorType::StorageBuffer;
-    binding2.descriptorCount = 1;
-    binding2.stageFlags = vk::ShaderStageFlags::Compute;
-
     vk::DescriptorSetLayoutCreateInfo info = {};
-    info.bindings = { binding1, binding2 };
+    info.bindings = { binding0, binding1 };
 
     m_descriptorSetLayout = std::make_unique<vk::DescriptorSetLayout>(m_core->device(), info);
 }
 
 void ComputeGenerator::createDescriptorPool() {
-    vk::DescriptorPoolSize size1 = {};
-    size1.type = vk::DescriptorType::StorageImage;
-    size1.descriptorCount = 1;
+    vk::DescriptorPoolSize size0 = {};
+    size0.type = vk::DescriptorType::StorageImage;
+    size0.descriptorCount = 1;
 
-    vk::DescriptorPoolSize size2 = {};
-    size2.type = vk::DescriptorType::StorageBuffer;
-    size2.descriptorCount = 1;
+    vk::DescriptorPoolSize size1 = {};
+    size1.type = vk::DescriptorType::StorageBuffer;
+    size1.descriptorCount = 1;
 
     vk::DescriptorPoolCreateInfo info = {};
     info.maxSets = 1;
-    info.poolSizes = { size1, size2 };
+    info.poolSizes = { size0, size1 };
 
     m_descriptorPool = std::make_unique<vk::DescriptorPool>(m_core->device(), info);
 }
@@ -389,19 +389,19 @@ void ComputeGenerator::writeDescriptors() {
     bufferInfo.buffer = m_inputBuffer.get();
     bufferInfo.range = m_inputBuffer->size();
 
+    vk::WriteDescriptorSet write0 = {};
+    write0.dstSet = m_descriptorSet.get();
+    write0.dstBinding = 0;
+    write0.imageInfo = { imageInfo };
+    write0.descriptorType = vk::DescriptorType::StorageImage;
+
     vk::WriteDescriptorSet write1 = {};
     write1.dstSet = m_descriptorSet.get();
-    write1.dstBinding = 0;
-    write1.imageInfo = { imageInfo };
-    write1.descriptorType = vk::DescriptorType::StorageImage;
+    write1.dstBinding = 1;
+    write1.bufferInfo = { bufferInfo };
+    write1.descriptorType = vk::DescriptorType::StorageBuffer;
 
-    vk::WriteDescriptorSet write2 = {};
-    write2.dstSet = m_descriptorSet.get();
-    write2.dstBinding = 1;
-    write2.bufferInfo = { bufferInfo };
-    write2.descriptorType = vk::DescriptorType::StorageBuffer;
-
-    vk::DescriptorSet::update(m_core->device(), { write1, write2 }, {});
+    vk::DescriptorSet::update(m_core->device(), { write0, write1 }, {});
 }
 
 void ComputeGenerator::createMainPipelineLayout() {
