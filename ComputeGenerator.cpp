@@ -59,20 +59,30 @@ void ComputeGenerator::stop() {
 }
 
 void ComputeGenerator::generatorLoop() {
-    size_t counter = 0;
-    std::vector<glm::ivec2> openList;
-    Color32 color;
+    std::vector<std::vector<glm::ivec2>> openLists(FRAMES);
+    std::vector<Color32> colors(FRAMES);
 
     while (*m_running) {
+        size_t index = m_frame % FRAMES;
+
+        auto& openList = openLists[index];
+        auto& color = colors[index];
+
+        if (m_openSet.size() == 0) break;
+        if (!m_source->hasNext()) break;
+
+        m_fences[index].wait();
+        m_fences[index].reset();
+
+        if (m_frame > 1) {
+            readResult(openList, color);
+        }
+
         openList.clear();
+
         for (auto& pos : m_openSet) {
             openList.push_back(pos);
         }
-
-        if (openList.size() == 0) break;
-        if (!m_source->hasNext()) break;
-
-        size_t index = m_frame % FRAMES;
 
         vk::CommandBuffer& commandBuffer = m_commandBuffers[index];
         commandBuffer.reset(vk::CommandBufferResetFlags::None);
@@ -91,12 +101,22 @@ void ComputeGenerator::generatorLoop() {
 
         m_core->submitCompute(commandBuffer, &m_fences[index]);
 
+        m_frame++;
+    }
+
+    for (size_t i = 0; i < FRAMES; i++) {
+        m_frame++;
+        size_t index = m_frame % FRAMES;
+
+        auto& openList = openLists[index];
+        auto& color = colors[index];
+
         m_fences[index].wait();
         m_fences[index].reset();
 
-        readResult(openList, color);
-
-        m_frame++;
+        if (m_frame > 1) {
+            readResult(openList, color);
+        }
     }
 }
 
@@ -182,11 +202,14 @@ void ComputeGenerator::readResult(std::vector<glm::ivec2>& openList, Color32 col
     }
 
     glm::ivec2 pos = openList[result];
-    m_colorQueue->enqueue(pos, color);
-    m_bitmap.getPixel(pos.x, pos.y) = color;
-    addNeighborsToOpenSet(pos);
-    m_openSet.erase(pos);
-    m_queue.push({ color, pos });
+    Color32& existingColor = m_bitmap.getPixel(pos.x, pos.y);
+    if (existingColor.a == 0) {
+        m_colorQueue->enqueue(pos, color);
+        existingColor = color;
+        addNeighborsToOpenSet(pos);
+        m_openSet.erase(pos);
+        m_queue.push({ color, pos });
+    }
 }
 
 void ComputeGenerator::addToOpenSet(glm::ivec2 pos) {
@@ -433,7 +456,7 @@ void ComputeGenerator::createMainPipeline(const std::string& shader) {
 
 void ComputeGenerator::createFences() {
     vk::FenceCreateInfo info = {};
-    //info.flags = vk::FenceCreateFlags::Signaled;
+    info.flags = vk::FenceCreateFlags::Signaled;
 
     for (size_t i = 0; i < FRAMES; i++) {
         m_fences.emplace_back(m_core->device(), info);
