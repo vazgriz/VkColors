@@ -31,6 +31,8 @@ ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource
     createDescriptorPool();
     createDescriptorSets();
     writeDescriptors();
+    createUpdatePipelineLayout();
+    createUpdatePipeline();
     createMainPipelineLayout();
     createMainPipeline(shader);
     createFences();
@@ -120,67 +122,84 @@ void ComputeGenerator::generatorLoop() {
     }
 }
 
-struct PushConstants {
+struct UpdatePushConstants {
+    glm::ivec4 color;
+    glm::ivec2 pos;
+};
+
+struct MainPushConstants {
     glm::ivec4 color;
     int32_t count;
 };
 
 void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, Color32 color, size_t index) {
-    vk::ImageMemoryBarrier barrier = {};
-    barrier.image = m_texture.get();
-    barrier.oldLayout = vk::ImageLayout::General;
-    barrier.newLayout = vk::ImageLayout::TransferDstOptimal;
-    barrier.srcAccessMask = vk::AccessFlags::ShaderRead | vk::AccessFlags::ShaderWrite;
-    barrier.dstAccessMask = vk::AccessFlags::TransferWrite;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.subresourceRange.aspectMask = vk::ImageAspectFlags::Color;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
+    vk::BufferMemoryBarrier bufferBarrier = {};
+    bufferBarrier.buffer = &m_inputBuffers[index];
+    bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bufferBarrier.srcAccessMask = vk::AccessFlags::None;
+    bufferBarrier.dstAccessMask = vk::AccessFlags::TransferWrite;
+    bufferBarrier.size = sizeof(glm::ivec2) * openList.size();
 
-    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::ComputeShader, vk::PipelineStageFlags::Transfer, vk::DependencyFlags::None,
-        {}, {}, { barrier });
+    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::TopOfPipe, vk::PipelineStageFlags::Transfer, {}, {}, { bufferBarrier }, {});
 
+    //transfer input
     auto& staging = m_stagings[index];
+    staging.transfer(openList.data(), openList.size() * sizeof(glm::ivec2), m_inputBuffers[index]);
+    staging.flush(commandBuffer);
 
+    //update image
     while (m_queue.size() > 0) {
         auto item = m_queue.front();
         m_queue.pop();
 
-        vk::Extent3D extent = {};
-        extent.width = 1;
-        extent.height = 1;
-        extent.depth = 1;
+        vk::ImageMemoryBarrier barrier = {};
+        barrier.image = m_texture.get();
+        barrier.oldLayout = vk::ImageLayout::General;
+        barrier.newLayout = vk::ImageLayout::General;
+        barrier.srcAccessMask = vk::AccessFlags::ShaderRead;
+        barrier.dstAccessMask = vk::AccessFlags::ShaderWrite;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.subresourceRange.aspectMask = vk::ImageAspectFlags::Color;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = 1;
 
-        vk::Offset3D offset = {};
-        offset.x = item.pos.x;
-        offset.y = item.pos.y;
+        commandBuffer.pipelineBarrier(vk::PipelineStageFlags::ComputeShader, vk::PipelineStageFlags::ComputeShader, {}, {}, {}, { barrier });
 
-        staging.transfer(&item.color, sizeof(Color32), *m_texture, vk::ImageLayout::TransferDstOptimal, extent, offset);
+        commandBuffer.bindPipeline(vk::PipelineBindPoint::Compute, *m_updatePipeline);
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::Compute, *m_updatePipelineLayout, 0, { m_descriptorSets[index] }, {});
+
+        UpdatePushConstants updateConstants = {};
+        updateConstants.color = glm::ivec4{ item.color.r, item.color.g, item.color.b, 255 };
+        updateConstants.pos = item.pos;
+
+        commandBuffer.pushConstants(*m_updatePipelineLayout, vk::ShaderStageFlags::Compute, 0, sizeof(UpdatePushConstants), &updateConstants);
+        commandBuffer.dispatch(1, 1, 1);
+
+        barrier.srcAccessMask = vk::AccessFlags::ShaderWrite;
+        barrier.dstAccessMask = vk::AccessFlags::ShaderRead;
+
+        commandBuffer.pipelineBarrier(vk::PipelineStageFlags::ComputeShader, vk::PipelineStageFlags::ComputeShader, {}, {}, {}, { barrier });
     }
 
-    staging.transfer(openList.data(), openList.size() * sizeof(glm::ivec2), m_inputBuffers[index]);
+    bufferBarrier.srcAccessMask = vk::AccessFlags::TransferWrite;
+    bufferBarrier.dstAccessMask = vk::AccessFlags::ShaderRead;
 
-    staging.flush(commandBuffer);
+    //wait on input transfer
+    //commandBuffer.pipelineBarrier(vk::PipelineStageFlags::Transfer, vk::PipelineStageFlags::ComputeShader, {}, {}, { bufferBarrier }, {});
 
-    barrier.oldLayout = vk::ImageLayout::TransferDstOptimal;
-    barrier.newLayout = vk::ImageLayout::General;
-    barrier.srcAccessMask = vk::AccessFlags::TransferWrite;
-    barrier.dstAccessMask = vk::AccessFlags::ShaderRead | vk::AccessFlags::ShaderWrite;
-
-    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::Transfer, vk::PipelineStageFlags::ComputeShader, vk::DependencyFlags::None,
-        {}, {}, { barrier });
-
+    //main shader
     commandBuffer.bindPipeline(vk::PipelineBindPoint::Compute, *m_mainPipeline);
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::Compute, *m_mainPipelineLayout, 0, { m_descriptorSets[index] }, {});
 
-    PushConstants constants = {};
-    constants.count = static_cast<uint32_t>(openList.size());
-    constants.color = glm::ivec4{ color.r, color.g, color.b, 255 };
+    MainPushConstants mainConstants = {};
+    mainConstants.count = static_cast<uint32_t>(openList.size());
+    mainConstants.color = glm::ivec4{ color.r, color.g, color.b, 255 };
 
-    commandBuffer.pushConstants(*m_mainPipelineLayout, vk::ShaderStageFlags::Compute, 0, sizeof(PushConstants), &constants);
+    commandBuffer.pushConstants(*m_mainPipelineLayout, vk::ShaderStageFlags::Compute, 0, sizeof(MainPushConstants), &mainConstants);
 
     uint32_t mainGroups = (static_cast<uint32_t>(openList.size()) / GROUP_SIZE) + 1;
     commandBuffer.dispatch(mainGroups, 1, 1);
@@ -420,9 +439,36 @@ void ComputeGenerator::writeDescriptors() {
     }
 }
 
+void ComputeGenerator::createUpdatePipelineLayout() {
+    vk::PushConstantRange range = {};
+    range.size = sizeof(UpdatePushConstants);
+    range.stageFlags = vk::ShaderStageFlags::Compute;
+
+    vk::PipelineLayoutCreateInfo info = {};
+    info.setLayouts = { *m_descriptorSetLayout };
+    info.pushConstantRanges = { range };
+
+    m_updatePipelineLayout = std::make_unique<vk::PipelineLayout>(m_core->device(), info);
+}
+
+void ComputeGenerator::createUpdatePipeline() {
+    vk::ShaderModule module = loadShader(m_core->device(), "shaders/update.comp.spv");
+
+    vk::PipelineShaderStageCreateInfo shaderInfo = {};
+    shaderInfo.module = &module;
+    shaderInfo.name = "main";
+    shaderInfo.stage = vk::ShaderStageFlags::Compute;
+
+    vk::ComputePipelineCreateInfo info = {};
+    info.stage = shaderInfo;
+    info.layout = m_updatePipelineLayout.get();
+
+    m_updatePipeline = std::make_unique<vk::ComputePipeline>(m_core->device(), info);
+}
+
 void ComputeGenerator::createMainPipelineLayout() {
     vk::PushConstantRange range = {};
-    range.size = sizeof(PushConstants);
+    range.size = sizeof(MainPushConstants);
     range.stageFlags = vk::ShaderStageFlags::Compute;
 
     vk::PipelineLayoutCreateInfo info = {};

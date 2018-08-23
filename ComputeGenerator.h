@@ -50,6 +50,8 @@ private:
     std::vector<vk::DescriptorSet> m_descriptorSets;
     std::unique_ptr<vk::CommandPool> m_commandPool;
     std::vector<vk::CommandBuffer> m_commandBuffers;
+    std::unique_ptr<vk::PipelineLayout> m_updatePipelineLayout;
+    std::unique_ptr<vk::Pipeline> m_updatePipeline;
     std::unique_ptr<vk::PipelineLayout> m_mainPipelineLayout;
     std::unique_ptr<vk::Pipeline> m_mainPipeline;
     std::vector<vk::Fence> m_fences;
@@ -72,6 +74,8 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
     void writeDescriptors();
+    void createUpdatePipelineLayout();
+    void createUpdatePipeline();
     void createMainPipelineLayout();
     void createMainPipeline(const std::string& shader);
     void createFences();
