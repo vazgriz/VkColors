@@ -208,7 +208,7 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
 void ComputeGenerator::readResult(size_t index, std::vector<glm::ivec2>& openList, Color32 color) {
     uint32_t bestScore = std::numeric_limits<uint32_t>::max();
     uint32_t result = 0;
-    uint32_t* readBack = static_cast<uint32_t*>(m_resultMappings[index]);
+    uint32_t* readBack = static_cast<uint32_t*>(m_readMappings[index]);
 
     for (uint32_t i = 0; i < openList.size(); i++) {
         uint32_t score = readBack[i];
@@ -350,7 +350,7 @@ void ComputeGenerator::createReadBuffers() {
             vk::MemoryPropertyFlags::HostVisible | vk::MemoryPropertyFlags::HostCoherent | vk::MemoryPropertyFlags::HostCached,
             vk::MemoryPropertyFlags::HostVisible | vk::MemoryPropertyFlags::HostCoherent);
         m_readBuffers[i].bind(*alloc.memory, alloc.offset);
-        m_resultMappings.push_back(m_allocator->getMapping(alloc.memory, alloc.offset));
+        m_readMappings.push_back(m_allocator->getMapping(alloc.memory, alloc.offset));
     }
 }
 
