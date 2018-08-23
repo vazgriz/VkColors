@@ -115,7 +115,7 @@ void ComputeGenerator::generatorLoop() {
         m_fences[index].wait();
         m_fences[index].reset();
 
-        if (m_frame > 1) {
+        if (m_frame >= FRAMES) {
             readResult(index, openList, color);
         }
     }
