@@ -169,7 +169,7 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
     barrier.oldLayout = vk::ImageLayout::TransferDstOptimal;
     barrier.newLayout = vk::ImageLayout::General;
     barrier.srcAccessMask = vk::AccessFlags::TransferWrite;
-    barrier.dstAccessMask = vk::AccessFlags::ShaderRead | vk::AccessFlags::ShaderWrite;;
+    barrier.dstAccessMask = vk::AccessFlags::ShaderRead | vk::AccessFlags::ShaderWrite;
 
     commandBuffer.pipelineBarrier(vk::PipelineStageFlags::Transfer, vk::PipelineStageFlags::ComputeShader, vk::DependencyFlags::None,
         {}, {}, { barrier });
