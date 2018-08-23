@@ -57,6 +57,7 @@ void ComputeGenerator::stop() {
 }
 
 void ComputeGenerator::generatorLoop() {
+    std::this_thread::sleep_for(std::chrono::milliseconds(33));
     std::vector<std::vector<glm::ivec2>> openLists(FRAMES);
     std::vector<Color32> colors(FRAMES);
 
