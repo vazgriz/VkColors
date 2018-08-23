@@ -13,7 +13,7 @@ struct StagingData {
 
 class Staging {
 public:
-    Staging(Core& core, Allocator& allocator);
+    Staging(Core& core, Allocator& allocator, size_t size);
     Staging(const Staging& other) = delete;
     Staging& operator = (const Staging& other) = delete;
     Staging(Staging&& other);
@@ -33,5 +33,5 @@ private:
     void* m_mapping;
     std::vector<StagingData> m_data;
 
-    void createStagingMemory();
+    void createStagingMemory(size_t size);
 };

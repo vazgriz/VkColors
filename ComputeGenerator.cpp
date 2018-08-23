@@ -5,9 +5,10 @@
 
 #define FRAMES 2
 #define GROUP_SIZE 64
+#define STAGING_SIZE (64 * 1024 * 1024)
 
 ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, glm::ivec2 size, ColorQueue& colorQueue, const std::string& shader)
-    : m_bitmap(size.x, size.y), m_staging(core, allocator) {
+    : m_bitmap(size.x, size.y), m_staging(core, allocator, STAGING_SIZE) {
     m_core = &core;
     m_allocator = &allocator;
     m_source = &source;

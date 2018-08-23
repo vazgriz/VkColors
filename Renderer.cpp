@@ -2,6 +2,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "Utilities.h"
 
+#define STAGING_SIZE (64 * 1024 * 1024)
+
 struct Vertex {
     glm::vec3 pos;
     glm::vec2 uv;
@@ -32,7 +34,7 @@ struct Vertex {
     }
 };
 
-Renderer::Renderer(Core& core, Allocator& allocator, glm::ivec2 size, ColorQueue& colorQueue) : m_staging(core, allocator) {
+Renderer::Renderer(Core& core, Allocator& allocator, glm::ivec2 size, ColorQueue& colorQueue) : m_staging(core, allocator, STAGING_SIZE) {
     m_core = &core;
     m_allocator = &allocator;
     m_queue = &colorQueue;

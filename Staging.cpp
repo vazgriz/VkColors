@@ -1,20 +1,20 @@
 #include "Staging.h"
 #include "Utilities.h"
 
-Staging::Staging(Core& core, Allocator& allocator) {
+Staging::Staging(Core& core, Allocator& allocator, size_t size) {
     m_core = &core;
     m_allocator = &allocator;
 
-    createStagingMemory();
+    createStagingMemory(size);
 }
 
 Staging::Staging(Staging&& other) {
     *this = std::move(other);
 }
 
-void Staging::createStagingMemory() {
+void Staging::createStagingMemory(size_t size) {
     vk::BufferCreateInfo info = {};
-    info.size = PAGE_SIZE;
+    info.size = size;
     info.usage = vk::BufferUsageFlags::TransferSrc;
 
     m_buffer = std::make_unique<vk::Buffer>(m_core->device(), info);
