@@ -3,7 +3,9 @@
 #include <iostream>
 
 const std::vector<std::string> validationLayers = {
+#ifndef NDEBUG
     "VK_LAYER_LUNARG_standard_validation"
+#endif
 };
 
 const std::vector<std::string> deviceExtensions = {
