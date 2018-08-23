@@ -370,7 +370,7 @@ void ComputeGenerator::createDescriptorPool() {
     size1.descriptorCount = 2 * FRAMES;
 
     vk::DescriptorPoolCreateInfo info = {};
-    info.maxSets = 2;
+    info.maxSets = FRAMES;
     info.poolSizes = { size0, size1 };
 
     m_descriptorPool = std::make_unique<vk::DescriptorPool>(m_core->device(), info);
