@@ -44,7 +44,6 @@ private:
     std::unique_ptr<vk::ImageView> m_textureView;
     std::unique_ptr<vk::Buffer> m_inputBuffer;
     std::unique_ptr<vk::Buffer> m_readBuffer;
-    Allocation m_readAlloc;
     void* m_resultMapping;
     std::unique_ptr<vk::DescriptorSetLayout> m_descriptorSetLayout;
     std::unique_ptr<vk::DescriptorPool> m_descriptorPool;

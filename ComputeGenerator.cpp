@@ -326,11 +326,11 @@ void ComputeGenerator::createReadBuffer() {
 
     m_readBuffer = std::make_unique<vk::Buffer>(m_core->device(), info);
 
-    m_readAlloc = m_allocator->allocate(m_readBuffer->requirements(),
+    Allocation alloc = m_allocator->allocate(m_readBuffer->requirements(),
         vk::MemoryPropertyFlags::HostVisible | vk::MemoryPropertyFlags::HostCoherent | vk::MemoryPropertyFlags::HostCached,
         vk::MemoryPropertyFlags::HostVisible | vk::MemoryPropertyFlags::HostCoherent);
-    m_readBuffer->bind(*m_readAlloc.memory, m_readAlloc.offset);
-    m_resultMapping = m_allocator->getMapping(m_readAlloc.memory, m_readAlloc.offset);
+    m_readBuffer->bind(*alloc.memory, alloc.offset);
+    m_resultMapping = m_allocator->getMapping(alloc.memory, alloc.offset);
 }
 
 void ComputeGenerator::createDescriptorSetLayout() {
