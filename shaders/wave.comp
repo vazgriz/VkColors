@@ -42,23 +42,18 @@ void main() {
         pos + ivec2( 1,  1)
     );
 
-    uint[8] scores = { UMAX, UMAX, UMAX, UMAX, UMAX, UMAX, UMAX, UMAX,  };
+    uint bestScore = UMAX;
 
     for (int i = 0; i < 8; i++) {
         ivec2 n = neighbors[i];
         ivec4 color = imageLoad(image, n);
         if (color.a != 0) {
-            scores[i] = length2(info.color.rgb - color.rgb);
+            uint score = length2(info.color.rgb - color.rgb);
+            if (score < bestScore) {
+                bestScore = score;
+            }
         }
     }
 
-    uint realScore = UMAX;
-
-    for (int i = 0; i < 8; i++) {
-        if (scores[i] < realScore) {
-            realScore = scores[i];
-        }
-    }
-
-    outputData.scores[gl_GlobalInvocationID.x] = realScore;
+    outputData.scores[gl_GlobalInvocationID.x] = bestScore;
 }
