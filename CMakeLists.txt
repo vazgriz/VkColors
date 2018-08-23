@@ -15,6 +15,7 @@ set(SHADER_SOURCES
     "${PROJECT_SOURCE_DIR}/shaders/shader.vert" ;
     "${PROJECT_SOURCE_DIR}/shaders/shader.frag" ;
     "${PROJECT_SOURCE_DIR}/shaders/wave.comp" ;
+    "${PROJECT_SOURCE_DIR}/shaders/coral.comp" ;
     "${PROJECT_SOURCE_DIR}/shaders/update.comp" ;
 )
 set(SPIRV_BINARY_FILES)

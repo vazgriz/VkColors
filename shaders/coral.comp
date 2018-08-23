@@ -1,0 +1,58 @@
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+
+#define UMAX uint(-1)
+
+layout(local_size_x_id = 0) in;
+
+layout(push_constant) uniform Info {
+    ivec4 color;
+    int count;
+} info;
+
+layout(set = 0, binding = 0, rgba8i) uniform iimage2D image;
+
+layout(set = 0, binding = 1) buffer Input {
+    ivec2[] data;
+} inputData;
+
+layout(set = 0, binding = 2) buffer Output {
+    uint[] scores;
+} outputData;
+
+int length2(ivec3 v) {
+    return v.x * v.x + v.y * v.y + v.z * v.z;
+}
+
+void main() {
+    if (gl_GlobalInvocationID.x >= info.count) {
+        outputData.scores[gl_GlobalInvocationID.x] = UMAX;
+        return;
+    }
+
+    ivec2 pos = inputData.data[gl_GlobalInvocationID.x];
+    ivec2[8] neighbors = ivec2[](
+        pos + ivec2(-1, -1),
+        pos + ivec2(-1,  0),
+        pos + ivec2(-1,  1),
+        pos + ivec2( 0, -1),
+        pos + ivec2( 0,  1),
+        pos + ivec2( 1, -1),
+        pos + ivec2( 1,  0),
+        pos + ivec2( 1,  1)
+    );
+
+    uint sum = 0;
+    uint count = 0;
+
+    for (int i = 0; i < 8; i++) {
+        ivec2 n = neighbors[i];
+        ivec4 color = imageLoad(image, n);
+        if (color.a != 0) {
+            sum += length2(info.color.rgb - color.rgb);
+            count++;
+        }
+    }
+
+    outputData.scores[gl_GlobalInvocationID.x] = uint(sum / float(count));
+}
