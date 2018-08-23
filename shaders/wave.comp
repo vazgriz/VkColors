@@ -8,7 +8,6 @@ layout(local_size_x_id = 0) in;
 layout(push_constant) uniform Info {
     ivec4 color;
     int count;
-    int targetLevel;
 } info;
 
 layout(set = 0, binding = 0, rgba8i) uniform iimage2D image;
