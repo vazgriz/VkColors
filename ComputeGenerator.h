@@ -42,12 +42,12 @@ private:
     Bitmap m_bitmap;
     std::unique_ptr<vk::Image> m_texture;
     std::unique_ptr<vk::ImageView> m_textureView;
-    std::unique_ptr<vk::Buffer> m_inputBuffer;
-    std::unique_ptr<vk::Buffer> m_readBuffer;
-    void* m_resultMapping;
+    std::vector<vk::Buffer> m_inputBuffers;
+    std::vector<vk::Buffer> m_readBuffers;
+    std::vector<void*> m_resultMappings;
     std::unique_ptr<vk::DescriptorSetLayout> m_descriptorSetLayout;
     std::unique_ptr<vk::DescriptorPool> m_descriptorPool;
-    std::unique_ptr<vk::DescriptorSet> m_descriptorSet;
+    std::vector<vk::DescriptorSet> m_descriptorSets;
     std::unique_ptr<vk::CommandPool> m_commandPool;
     std::vector<vk::CommandBuffer> m_commandBuffers;
     std::unique_ptr<vk::PipelineLayout> m_mainPipelineLayout;
@@ -66,11 +66,11 @@ private:
     void createCommandBuffers();
     void createTexture();
     void createTextureView();
-    void createInputBuffer();
-    void createReadBuffer();
+    void createInputBuffers();
+    void createReadBuffers();
     void createDescriptorSetLayout();
     void createDescriptorPool();
-    void createDescriptorSet();
+    void createDescriptorSets();
     void writeDescriptors();
     void createMainPipelineLayout();
     void createMainPipeline(const std::string& shader);
@@ -78,7 +78,7 @@ private:
 
     void addToOpenSet(glm::ivec2 pos);
     void addNeighborsToOpenSet(glm::ivec2 pos);
-    void readResult(std::vector<glm::ivec2>& openList, Color32 color);
+    void readResult(size_t index, std::vector<glm::ivec2>& openList, Color32 color);
 
     void generatorLoop();
 };

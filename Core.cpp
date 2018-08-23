@@ -134,7 +134,7 @@ void Core::submitCompute(vk::CommandBuffer& commandBuffer, vk::Fence* fence) {
     vk::SubmitInfo info = {};
     info.commandBuffers = { commandBuffer };
     info.waitSemaphores = { *m_computeSemaphore };
-    info.waitDstStageMask = { vk::PipelineStageFlags::Transfer };
+    info.waitDstStageMask = { vk::PipelineStageFlags::ComputeShader };
     info.signalSemaphores = { *m_computeSemaphore };
     
     if (m_sharedQueue) {
