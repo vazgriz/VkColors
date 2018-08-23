@@ -22,7 +22,14 @@ Page* Allocator::allocNewPage(uint32_t type, size_t size) {
 
     try {
         m_pages[type].emplace_back(Page{ std::make_unique<vk::DeviceMemory>(m_core->device(), info), allocSize, size });
-        return &m_pages[type].back();
+        auto& newPage = m_pages[type].back();
+
+        if ((m_properties.memoryTypes[type].propertyFlags & vk::MemoryPropertyFlags::HostVisible) != vk::MemoryPropertyFlags::None) {
+            void* mapping = newPage.memory->map(0, allocSize);
+            m_mappings.insert({ newPage.memory.get(), mapping });
+        }
+
+        return &newPage;
     }
     catch (...) {
         return nullptr;
@@ -72,4 +79,15 @@ Allocation Allocator::allocate(vk::MemoryRequirements requirements, vk::MemoryPr
     }
     
     throw std::runtime_error("Failed to allocate memory");
+}
+
+void* Allocator::getMapping(vk::DeviceMemory* memory, size_t offset) {
+    auto it = m_mappings.find(memory);
+    if (it != m_mappings.end()) {
+        void* result = it->second;
+        result = static_cast<char*>(result) + offset;
+        return result;
+    } else {
+        return nullptr;
+    }
 }

@@ -22,7 +22,7 @@ void Staging::createStagingMemory() {
 
     m_alloc = m_allocator->allocate(m_buffer->requirements(), vk::MemoryPropertyFlags::HostVisible | vk::MemoryPropertyFlags::HostCoherent, vk::MemoryPropertyFlags::HostVisible | vk::MemoryPropertyFlags::HostCoherent);
     m_buffer->bind(*m_alloc.memory, m_alloc.offset);
-    m_mapping = m_alloc.memory->map(m_alloc.offset, PAGE_SIZE);
+    m_mapping = m_allocator->getMapping(m_alloc.memory, m_alloc.offset);
 }
 
 void Staging::transfer(void* data, size_t size, vk::Buffer& dstBuffer) {

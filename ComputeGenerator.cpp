@@ -298,7 +298,7 @@ void ComputeGenerator::createReadBuffer() {
         vk::MemoryPropertyFlags::HostVisible | vk::MemoryPropertyFlags::HostCoherent | vk::MemoryPropertyFlags::HostCached,
         vk::MemoryPropertyFlags::HostVisible | vk::MemoryPropertyFlags::HostCoherent);
     m_readBuffer->bind(*m_readAlloc.memory, m_readAlloc.offset);
-    m_resultMapping = m_readAlloc.memory->map(m_readAlloc.offset, m_readAlloc.size);
+    m_resultMapping = m_allocator->getMapping(m_readAlloc.memory, m_readAlloc.offset);
 }
 
 void ComputeGenerator::createDescriptorSetLayout() {
