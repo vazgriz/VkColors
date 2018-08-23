@@ -38,7 +38,7 @@ private:
     ColorQueue* m_colorQueue;
     glm::ivec2 m_size;
 
-    Staging m_staging;
+    std::vector<Staging> m_stagings;
     Bitmap m_bitmap;
     std::unique_ptr<vk::Image> m_texture;
     std::unique_ptr<vk::ImageView> m_textureView;
@@ -62,7 +62,7 @@ private:
     std::unique_ptr<std::atomic_bool> m_running;
     std::queue<ColorPos> m_queue;
 
-    void record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, Color32 color);
+    void record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, Color32 color, size_t index);
     void createCommandPool();
     void createCommandBuffers();
     void createTexture();

@@ -8,7 +8,7 @@
 #define STAGING_SIZE (64 * 1024 * 1024)
 
 ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, glm::ivec2 size, ColorQueue& colorQueue, const std::string& shader)
-    : m_bitmap(size.x, size.y), m_staging(core, allocator, STAGING_SIZE) {
+    : m_bitmap(size.x, size.y) {
     m_core = &core;
     m_allocator = &allocator;
     m_source = &source;
@@ -16,6 +16,10 @@ ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource
     m_colorQueue = &colorQueue;
 
     m_running = std::make_unique<std::atomic_bool>();
+
+    for (size_t i = 0; i < FRAMES; i++) {
+        m_stagings.emplace_back(core, allocator, STAGING_SIZE);
+    }
 
     createCommandPool();
     createCommandBuffers();
@@ -40,7 +44,7 @@ ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource
     }
 }
 
-ComputeGenerator::ComputeGenerator(ComputeGenerator&& other) : m_bitmap(std::move(other.m_bitmap)), m_staging(std::move(other.m_staging)) {
+ComputeGenerator::ComputeGenerator(ComputeGenerator&& other) : m_bitmap(std::move(other.m_bitmap)) {
     *this = std::move(other);
 }
 
@@ -81,7 +85,7 @@ void ComputeGenerator::generatorLoop() {
         color = m_source->getNext();
         color.a = 255;
 
-        record(commandBuffer, openList, color);
+        record(commandBuffer, openList, color, index);
 
         commandBuffer.end();
 
@@ -102,7 +106,7 @@ struct PushConstants {
     int32_t targetLevel;
 };
 
-void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, Color32 color) {
+void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, Color32 color, size_t index) {
     vk::ImageMemoryBarrier barrier = {};
     barrier.image = m_texture.get();
     barrier.oldLayout = vk::ImageLayout::General;
@@ -120,6 +124,8 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
     commandBuffer.pipelineBarrier(vk::PipelineStageFlags::ComputeShader, vk::PipelineStageFlags::Transfer, vk::DependencyFlags::None,
         {}, {}, { barrier });
 
+    auto& staging = m_stagings[index];
+
     while (m_queue.size() > 0) {
         auto item = m_queue.front();
         m_queue.pop();
@@ -133,12 +139,12 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
         offset.x = item.pos.x;
         offset.y = item.pos.y;
 
-        m_staging.transfer(&item.color, sizeof(Color32), *m_texture, vk::ImageLayout::TransferDstOptimal, extent, offset);
+        staging.transfer(&item.color, sizeof(Color32), *m_texture, vk::ImageLayout::TransferDstOptimal, extent, offset);
     }
 
-    m_staging.transfer(openList.data(), openList.size() * sizeof(glm::ivec2), *m_inputBuffer);
+    staging.transfer(openList.data(), openList.size() * sizeof(glm::ivec2), *m_inputBuffer);
 
-    m_staging.flush(commandBuffer);
+    staging.flush(commandBuffer);
 
     barrier.oldLayout = vk::ImageLayout::TransferDstOptimal;
     barrier.newLayout = vk::ImageLayout::General;
