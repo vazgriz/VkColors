@@ -209,6 +209,8 @@ void ComputeGenerator::readResult(std::vector<glm::ivec2>& openList, Color32 col
         addNeighborsToOpenSet(pos);
         m_openSet.erase(pos);
         m_queue.push({ color, pos });
+    } else {
+        m_source->resubmit(color);
     }
 }
 

@@ -1,4 +1,5 @@
 #include "ColorSource.h"
+#include <queue>
 
 class ShuffleSource : public ColorSource {
 public:
@@ -10,8 +11,8 @@ public:
 
     bool hasNext();
     Color32 getNext();
+    void resubmit(Color32 color);
 
 private:
-    std::vector<Color32> m_colors;
-    size_t m_index = 0;
+    std::queue<Color32> m_colors;
 };
