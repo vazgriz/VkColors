@@ -77,51 +77,6 @@ void ComputeGenerator::generatorLoop() {
 
         commandBuffer.begin(beginInfo);
 
-        vk::ImageMemoryBarrier barrier = {};
-        barrier.image = m_texture.get();
-        barrier.oldLayout = vk::ImageLayout::General;
-        barrier.newLayout = vk::ImageLayout::TransferDstOptimal;
-        barrier.srcAccessMask = vk::AccessFlags::ShaderRead | vk::AccessFlags::ShaderWrite;
-        barrier.dstAccessMask = vk::AccessFlags::TransferWrite;
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.subresourceRange.aspectMask = vk::ImageAspectFlags::Color;
-        barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = 1;
-        barrier.subresourceRange.baseMipLevel = 0;
-        barrier.subresourceRange.levelCount = 1;
-
-        commandBuffer.pipelineBarrier(vk::PipelineStageFlags::ComputeShader, vk::PipelineStageFlags::Transfer, vk::DependencyFlags::None,
-            {}, {}, { barrier });
-
-        m_staging.transfer(openList.data(), openList.size() * sizeof(glm::ivec2), *m_inputBuffer);
-
-        while (m_queue.size() > 0) {
-            auto item = m_queue.front();
-            m_queue.pop();
-
-            vk::Extent3D extent = {};
-            extent.width = 1;
-            extent.height = 1;
-            extent.depth = 1;
-
-            vk::Offset3D offset = {};
-            offset.x = item.pos.x;
-            offset.y = item.pos.y;
-
-            m_staging.transfer(&item.color, sizeof(Color32), *m_texture, vk::ImageLayout::TransferDstOptimal, extent, offset);
-        }
-
-        m_staging.flush(commandBuffer);
-
-        barrier.oldLayout = vk::ImageLayout::TransferDstOptimal;
-        barrier.newLayout = vk::ImageLayout::General;
-        barrier.srcAccessMask = vk::AccessFlags::TransferWrite;
-        barrier.dstAccessMask = vk::AccessFlags::ShaderRead | vk::AccessFlags::ShaderWrite;;
-
-        commandBuffer.pipelineBarrier(vk::PipelineStageFlags::Transfer, vk::PipelineStageFlags::ComputeShader, vk::DependencyFlags::None,
-            {}, {}, { barrier });
-
         color = m_source->getNext();
         color.a = 255;
 
@@ -134,7 +89,7 @@ void ComputeGenerator::generatorLoop() {
         m_fences[index].wait();
         m_fences[index].reset();
 
-        m_queue.push({ color, readResult(openList, color) });
+        readResult(openList, color);
 
         m_frame++;
     }
@@ -147,7 +102,51 @@ struct PushConstants {
 };
 
 void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, Color32 color) {
-    if (openList.size() == 0) return;
+    vk::ImageMemoryBarrier barrier = {};
+    barrier.image = m_texture.get();
+    barrier.oldLayout = vk::ImageLayout::General;
+    barrier.newLayout = vk::ImageLayout::TransferDstOptimal;
+    barrier.srcAccessMask = vk::AccessFlags::ShaderRead | vk::AccessFlags::ShaderWrite;
+    barrier.dstAccessMask = vk::AccessFlags::TransferWrite;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.subresourceRange.aspectMask = vk::ImageAspectFlags::Color;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+
+    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::ComputeShader, vk::PipelineStageFlags::Transfer, vk::DependencyFlags::None,
+        {}, {}, { barrier });
+
+    while (m_queue.size() > 0) {
+        auto item = m_queue.front();
+        m_queue.pop();
+
+        vk::Extent3D extent = {};
+        extent.width = 1;
+        extent.height = 1;
+        extent.depth = 1;
+
+        vk::Offset3D offset = {};
+        offset.x = item.pos.x;
+        offset.y = item.pos.y;
+
+        m_staging.transfer(&item.color, sizeof(Color32), *m_texture, vk::ImageLayout::TransferDstOptimal, extent, offset);
+    }
+
+    m_staging.transfer(openList.data(), openList.size() * sizeof(glm::ivec2), *m_inputBuffer);
+
+    m_staging.flush(commandBuffer);
+
+    barrier.oldLayout = vk::ImageLayout::TransferDstOptimal;
+    barrier.newLayout = vk::ImageLayout::General;
+    barrier.srcAccessMask = vk::AccessFlags::TransferWrite;
+    barrier.dstAccessMask = vk::AccessFlags::ShaderRead | vk::AccessFlags::ShaderWrite;;
+
+    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::Transfer, vk::PipelineStageFlags::ComputeShader, vk::DependencyFlags::None,
+        {}, {}, { barrier });
+
     commandBuffer.bindPipeline(vk::PipelineBindPoint::Compute, *m_mainPipeline);
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::Compute, *m_mainPipelineLayout, 0, { *m_descriptorSet }, {});
 
@@ -162,7 +161,7 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
     commandBuffer.dispatch(mainGroups, 1, 1);
 }
 
-glm::ivec2 ComputeGenerator::readResult(std::vector<glm::ivec2>& openList, Color32 color) {
+void ComputeGenerator::readResult(std::vector<glm::ivec2>& openList, Color32 color) {
     uint32_t bestScore = std::numeric_limits<uint32_t>::max();
     uint32_t result = 0;
     uint32_t* readBack = static_cast<uint32_t*>(m_resultMapping);
@@ -180,7 +179,7 @@ glm::ivec2 ComputeGenerator::readResult(std::vector<glm::ivec2>& openList, Color
     m_bitmap.getPixel(pos.x, pos.y) = color;
     addNeighborsToOpenSet(pos);
     m_openSet.erase(pos);
-    return pos;
+    m_queue.push({ color, pos });
 }
 
 void ComputeGenerator::addToOpenSet(glm::ivec2 pos) {
