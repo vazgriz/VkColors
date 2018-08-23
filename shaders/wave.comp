@@ -5,11 +5,6 @@
 
 layout(local_size_x_id = 0) in;
 
-struct Element {
-    uint index;
-    uint score;
-};
-
 layout(push_constant) uniform Info {
     ivec4 color;
     int count;
