@@ -38,11 +38,11 @@ private:
     ColorQueue* m_colorQueue;
     glm::ivec2 m_size;
 
-    std::vector<Staging> m_stagings;
     Bitmap m_bitmap;
     std::unique_ptr<vk::Image> m_texture;
     std::unique_ptr<vk::ImageView> m_textureView;
     std::vector<vk::Buffer> m_inputBuffers;
+    std::vector<void*> m_inputMappings;
     std::vector<vk::Buffer> m_readBuffers;
     std::vector<void*> m_readMappings;
     std::unique_ptr<vk::DescriptorSetLayout> m_descriptorSetLayout;

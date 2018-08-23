@@ -17,10 +17,6 @@ ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource
 
     m_running = std::make_unique<std::atomic_bool>();
 
-    for (size_t i = 0; i < FRAMES; i++) {
-        m_stagings.emplace_back(core, allocator, STAGING_SIZE);
-    }
-
     createCommandPool();
     createCommandBuffers();
     createTexture();
@@ -86,6 +82,8 @@ void ComputeGenerator::generatorLoop() {
             openList.push_back(pos);
         }
 
+        memcpy(m_inputMappings[index], openList.data(), openList.size() * sizeof(glm::ivec2));
+
         vk::CommandBuffer& commandBuffer = m_commandBuffers[index];
         commandBuffer.reset(vk::CommandBufferResetFlags::None);
 
@@ -133,21 +131,6 @@ struct MainPushConstants {
 };
 
 void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, Color32 color, size_t index) {
-    vk::BufferMemoryBarrier bufferBarrier = {};
-    bufferBarrier.buffer = &m_inputBuffers[index];
-    bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    bufferBarrier.srcAccessMask = vk::AccessFlags::None;
-    bufferBarrier.dstAccessMask = vk::AccessFlags::TransferWrite;
-    bufferBarrier.size = sizeof(glm::ivec2) * openList.size();
-
-    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::TopOfPipe, vk::PipelineStageFlags::Transfer, {}, {}, { bufferBarrier }, {});
-
-    //transfer input
-    auto& staging = m_stagings[index];
-    staging.transfer(openList.data(), openList.size() * sizeof(glm::ivec2), m_inputBuffers[index]);
-    staging.flush(commandBuffer);
-
     //update image
     while (m_queue.size() > 0) {
         auto item = m_queue.front();
@@ -184,12 +167,6 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
 
         commandBuffer.pipelineBarrier(vk::PipelineStageFlags::ComputeShader, vk::PipelineStageFlags::ComputeShader, {}, {}, {}, { barrier });
     }
-
-    bufferBarrier.srcAccessMask = vk::AccessFlags::TransferWrite;
-    bufferBarrier.dstAccessMask = vk::AccessFlags::ShaderRead;
-
-    //wait on input transfer
-    //commandBuffer.pipelineBarrier(vk::PipelineStageFlags::Transfer, vk::PipelineStageFlags::ComputeShader, {}, {}, { bufferBarrier }, {});
 
     //main shader
     commandBuffer.bindPipeline(vk::PipelineBindPoint::Compute, *m_mainPipeline);
@@ -333,8 +310,11 @@ void ComputeGenerator::createInputBuffers() {
 
         m_inputBuffers.emplace_back(m_core->device(), info);
 
-        Allocation alloc = m_allocator->allocate(m_inputBuffers[i].requirements(), vk::MemoryPropertyFlags::DeviceLocal, vk::MemoryPropertyFlags::DeviceLocal);
+        Allocation alloc = m_allocator->allocate(m_inputBuffers[i].requirements(),
+            vk::MemoryPropertyFlags::HostVisible | vk::MemoryPropertyFlags::HostCoherent | vk::MemoryPropertyFlags::DeviceLocal,
+            vk::MemoryPropertyFlags::HostVisible | vk::MemoryPropertyFlags::HostCoherent);
         m_inputBuffers[i].bind(*alloc.memory, alloc.offset);
+        m_inputMappings.push_back(m_allocator->getMapping(alloc.memory, alloc.offset));
     }
 }
 
