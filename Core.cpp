@@ -20,6 +20,7 @@ Core::Core(GLFWwindow* window) {
     createCommandPool();
     recreateSwapchain();
     createSemaphores();
+    preSignalComputeSemaphore();
 
     glfwSetWindowUserPointer(window, this);
     glfwSetWindowSizeCallback(window, &ResizeWindow);
@@ -132,6 +133,9 @@ void Core::submitSingleUseCommandBuffer(vk::CommandBuffer&& commandBuffer) {
 void Core::submitCompute(vk::CommandBuffer& commandBuffer, vk::Fence* fence) {
     vk::SubmitInfo info = {};
     info.commandBuffers = { commandBuffer };
+    info.waitSemaphores = { *m_computeSemaphore };
+    info.waitDstStageMask = { vk::PipelineStageFlags::Transfer };
+    info.signalSemaphores = { *m_computeSemaphore };
     
     if (m_sharedQueue) {
         std::lock_guard<std::mutex> lock(*m_queueMutex);
@@ -469,6 +473,15 @@ void Core::createSemaphores() {
     
     m_acquireSem = std::make_unique<vk::Semaphore>(*m_device, info);
     m_RenderSem = std::make_unique<vk::Semaphore>(*m_device, info);
+    m_computeSemaphore = std::make_unique<vk::Semaphore> (*m_device, info);
+}
+
+void Core::preSignalComputeSemaphore() {
+    vk::SubmitInfo info = {};
+    info.signalSemaphores = { *m_computeSemaphore };
+
+    m_computeQueue->submit({ info }, nullptr);
+    m_computeQueue->waitIdle();
 }
 
 void Core::beginRenderPass(vk::CommandBuffer& commandBuffer) {

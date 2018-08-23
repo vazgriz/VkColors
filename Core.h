@@ -62,6 +62,7 @@ private:
     std::unique_ptr<vk::Semaphore> m_acquireSem;
     std::unique_ptr<vk::Semaphore> m_RenderSem;
     std::unique_ptr<std::mutex> m_queueMutex;
+    std::unique_ptr<vk::Semaphore> m_computeSemaphore;
 
     uint32_t m_imageIndex;
     vk::CommandBuffer* m_commandBuffer;
@@ -87,4 +88,5 @@ private:
     void createCommandBuffers();
     void createFences();
     void createSemaphores();
+    void preSignalComputeSemaphore();
 };
