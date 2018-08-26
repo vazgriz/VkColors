@@ -7,6 +7,10 @@
 #define GROUP_SIZE 64
 #define STAGING_SIZE (64 * 1024 * 1024)
 
+uint32_t getWorkGroupCount(size_t count) {
+    return static_cast<uint32_t>(count / GROUP_SIZE) + ((count % GROUP_SIZE) == 0 ? 0 : 1);
+}
+
 ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, glm::ivec2 size, ColorQueue& colorQueue, const std::string& shader)
     : m_bitmap(size.x, size.y) {
     m_core = &core;
@@ -179,7 +183,7 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
 
     commandBuffer.pushConstants(*m_mainPipelineLayout, vk::ShaderStageFlags::Compute, 0, sizeof(MainPushConstants), &mainConstants);
 
-    uint32_t mainGroups = (static_cast<uint32_t>(openList.size()) / GROUP_SIZE) + 1;
+    uint32_t mainGroups = getWorkGroupCount(openList.size());
     commandBuffer.dispatch(mainGroups, 1, 1);
 }
 
