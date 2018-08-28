@@ -63,13 +63,13 @@ private:
     std::unique_ptr<std::atomic_bool> m_running;
     std::queue<ColorPos> m_queue;
 
-    void record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, Color32 color, size_t index);
+    void record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, std::vector<Color32>& colors, size_t index);
     void createCommandPool();
     void createCommandBuffers();
     void createTexture();
     void createTextureView();
     void createInputBuffers();
-    void createReadBuffers();
+    void createOutputBuffers();
     void createDescriptorSetLayout();
     void createDescriptorPool();
     void createDescriptorSets();
@@ -82,7 +82,7 @@ private:
 
     void addToOpenSet(glm::ivec2 pos);
     void addNeighborsToOpenSet(glm::ivec2 pos);
-    void readResult(size_t index, std::vector<glm::ivec2>& openList, Color32 color);
+    void readResult(size_t index, std::vector<glm::ivec2>& openList, std::vector<Color32>& colors);
 
     void generatorLoop();
 };

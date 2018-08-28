@@ -4,10 +4,12 @@
 #define UMAX uint(-1)
 
 layout(local_size_x_id = 0) in;
+layout(constant_id = 1) const uint maxWorkGroups = 1;
 
 layout(push_constant) uniform Info {
     ivec4 color;
     int count;
+    uint batchID;
 } info;
 
 layout(set = 0, binding = 0, rgba8i) uniform iimage2D image;
@@ -30,8 +32,9 @@ int length2(ivec3 v) {
 }
 
 void main() {
-    outputData.scores[gl_WorkGroupID.x].score = UMAX;
-    outputData.scores[gl_WorkGroupID.x].index = UMAX;
+    uint offset = info.batchID * maxWorkGroups;
+    outputData.scores[offset + gl_WorkGroupID.x].score = UMAX;
+    outputData.scores[offset + gl_WorkGroupID.x].index = UMAX;
 
     barrier();
 
@@ -64,11 +67,11 @@ void main() {
         }
     }
 
-    atomicMin(outputData.scores[gl_WorkGroupID.x].score, bestScore);
+    atomicMin(outputData.scores[offset + gl_WorkGroupID.x].score, bestScore);
 
     barrier();
 
-    if (outputData.scores[gl_WorkGroupID.x].score == bestScore) {
-        atomicMin(outputData.scores[gl_WorkGroupID.x].index, gl_GlobalInvocationID.x);
+    if (outputData.scores[offset + gl_WorkGroupID.x].score == bestScore) {
+        atomicMin(outputData.scores[offset + gl_WorkGroupID.x].index, gl_GlobalInvocationID.x);
     }
 }

@@ -27,7 +27,7 @@ int main() {
     ColorQueue colorQueue;
     Renderer renderer = Renderer(core, allocator, size, colorQueue);
     ShuffleSource source = ShuffleSource(6);
-    std::unique_ptr<Generator> generator = std::make_unique<ComputeGenerator>(core, allocator, source, size, colorQueue, "shaders/wave.comp.spv");
+    std::unique_ptr<Generator> generator = std::make_unique<ComputeGenerator>(core, allocator, source, size, colorQueue, "shaders/coral.comp.spv");
     generator->run();
 
     size_t frames = 0;

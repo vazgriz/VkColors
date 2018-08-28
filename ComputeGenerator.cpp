@@ -6,6 +6,7 @@
 #define FRAMES 2
 #define GROUP_SIZE 64
 #define STAGING_SIZE (64 * 1024 * 1024)
+#define BATCH_SIZE 1024
 
 uint32_t getWorkGroupCount(size_t count) {
     return static_cast<uint32_t>(count / GROUP_SIZE) + ((count % GROUP_SIZE) == 0 ? 0 : 1);
@@ -26,7 +27,7 @@ ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource
     createTexture();
     createTextureView();
     createInputBuffers();
-    createReadBuffers();
+    createOutputBuffers();
     createDescriptorSetLayout();
     createDescriptorPool();
     createDescriptorSets();
@@ -63,13 +64,13 @@ void ComputeGenerator::stop() {
 void ComputeGenerator::generatorLoop() {
     std::this_thread::sleep_for(std::chrono::milliseconds(33));
     std::vector<std::vector<glm::ivec2>> openLists(FRAMES);
-    std::vector<Color32> colors(FRAMES);
+    std::vector<std::vector<Color32>> colors(FRAMES);
 
     while (*m_running) {
         size_t index = m_frame % FRAMES;
 
         auto& openList = openLists[index];
-        auto& color = colors[index];
+        auto& colorList = colors[index];
 
         if (m_openSet.size() == 0) break;
         if (!m_source->hasNext()) break;
@@ -78,7 +79,8 @@ void ComputeGenerator::generatorLoop() {
         m_fences[index].reset();
 
         if (m_frame >= FRAMES) {
-            readResult(index, openList, color);
+            readResult(index, openList, colorList);
+            colorList.clear();
         }
 
         openList.clear();
@@ -97,10 +99,7 @@ void ComputeGenerator::generatorLoop() {
 
         commandBuffer.begin(beginInfo);
 
-        color = m_source->getNext();
-        color.a = 255;
-
-        record(commandBuffer, openList, color, index);
+        record(commandBuffer, openList, colorList, index);
 
         commandBuffer.end();
 
@@ -133,29 +132,30 @@ struct UpdatePushConstants {
 struct MainPushConstants {
     glm::ivec4 color;
     int32_t count;
+    uint32_t batchID;
 };
 
-void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, Color32 color, size_t index) {
+void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, std::vector<Color32>& colors, size_t index) {
+    vk::ImageMemoryBarrier barrier = {};
+    barrier.image = m_texture.get();
+    barrier.oldLayout = vk::ImageLayout::General;
+    barrier.newLayout = vk::ImageLayout::General;
+    barrier.srcAccessMask = vk::AccessFlags::ShaderRead;
+    barrier.dstAccessMask = vk::AccessFlags::ShaderWrite;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.subresourceRange.aspectMask = vk::ImageAspectFlags::Color;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+
+    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::ComputeShader, vk::PipelineStageFlags::ComputeShader, {}, {}, {}, { barrier });
+
     //update image
     while (m_queue.size() > 0) {
         auto item = m_queue.front();
         m_queue.pop();
-
-        vk::ImageMemoryBarrier barrier = {};
-        barrier.image = m_texture.get();
-        barrier.oldLayout = vk::ImageLayout::General;
-        barrier.newLayout = vk::ImageLayout::General;
-        barrier.srcAccessMask = vk::AccessFlags::ShaderRead;
-        barrier.dstAccessMask = vk::AccessFlags::ShaderWrite;
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.subresourceRange.aspectMask = vk::ImageAspectFlags::Color;
-        barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = 1;
-        barrier.subresourceRange.baseMipLevel = 0;
-        barrier.subresourceRange.levelCount = 1;
-
-        commandBuffer.pipelineBarrier(vk::PipelineStageFlags::ComputeShader, vk::PipelineStageFlags::ComputeShader, {}, {}, {}, { barrier });
 
         commandBuffer.bindPipeline(vk::PipelineBindPoint::Compute, *m_updatePipeline);
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::Compute, *m_updatePipelineLayout, 0, { m_descriptorSets[index] }, {});
@@ -166,25 +166,45 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
 
         commandBuffer.pushConstants(*m_updatePipelineLayout, vk::ShaderStageFlags::Compute, 0, sizeof(UpdatePushConstants), &updateConstants);
         commandBuffer.dispatch(1, 1, 1);
-
-        barrier.srcAccessMask = vk::AccessFlags::ShaderWrite;
-        barrier.dstAccessMask = vk::AccessFlags::ShaderRead;
-
-        commandBuffer.pipelineBarrier(vk::PipelineStageFlags::ComputeShader, vk::PipelineStageFlags::ComputeShader, {}, {}, {}, { barrier });
     }
 
+    barrier.srcAccessMask = vk::AccessFlags::ShaderWrite;
+    barrier.dstAccessMask = vk::AccessFlags::ShaderRead;
+
+    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::ComputeShader, vk::PipelineStageFlags::ComputeShader, {}, {}, {}, { barrier });
+
+    uint32_t batchSize = std::max<uint32_t>(1, std::min<uint32_t>(BATCH_SIZE, static_cast<uint32_t>(openList.size() / 1024)));
+
     //main shader
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::Compute, *m_mainPipeline);
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::Compute, *m_mainPipelineLayout, 0, { m_descriptorSets[index] }, {});
+    for (uint32_t i = 0; i < batchSize; i++) {
+        if (!m_source->hasNext()) break;
+        Color32 color = m_source->getNext();
+        color.a = 255;
+        colors.push_back(color);
 
-    MainPushConstants mainConstants = {};
-    mainConstants.count = static_cast<uint32_t>(openList.size());
-    mainConstants.color = glm::ivec4{ color.r, color.g, color.b, 255 };
+        commandBuffer.bindPipeline(vk::PipelineBindPoint::Compute, *m_mainPipeline);
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::Compute, *m_mainPipelineLayout, 0, { m_descriptorSets[index] }, {});
 
-    commandBuffer.pushConstants(*m_mainPipelineLayout, vk::ShaderStageFlags::Compute, 0, sizeof(MainPushConstants), &mainConstants);
+        MainPushConstants mainConstants = {};
+        mainConstants.count = static_cast<uint32_t>(openList.size());
+        mainConstants.color = glm::ivec4{ color.r, color.g, color.b, 255 };
+        mainConstants.batchID = i;
 
-    uint32_t mainGroups = getWorkGroupCount(openList.size());
-    commandBuffer.dispatch(mainGroups, 1, 1);
+        commandBuffer.pushConstants(*m_mainPipelineLayout, vk::ShaderStageFlags::Compute, 0, sizeof(MainPushConstants), &mainConstants);
+
+        uint32_t mainGroups = getWorkGroupCount(openList.size());
+        commandBuffer.dispatch(mainGroups, 1, 1);
+    }
+
+    vk::BufferMemoryBarrier bufferBarrier = {};
+    bufferBarrier.buffer = &m_readBuffers[index];
+    bufferBarrier.size = VK_WHOLE_SIZE;
+    bufferBarrier.srcAccessMask = vk::AccessFlags::ShaderWrite | vk::AccessFlags::ShaderRead;
+    bufferBarrier.dstAccessMask = vk::AccessFlags::HostRead;
+    bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+    commandBuffer.pipelineBarrier(vk::PipelineStageFlags::ComputeShader, vk::PipelineStageFlags::Host, {}, {}, { bufferBarrier }, {});
 }
 
 struct Score {
@@ -192,29 +212,34 @@ struct Score {
     uint32_t index;
 };
 
-void ComputeGenerator::readResult(size_t index, std::vector<glm::ivec2>& openList, Color32 color) {
-    uint32_t bestScore = std::numeric_limits<uint32_t>::max();
-    uint32_t result = 0;
+void ComputeGenerator::readResult(size_t index, std::vector<glm::ivec2>& openList, std::vector<Color32>& colors) {
     Score* readBack = static_cast<Score*>(m_readMappings[index]);
+    uint32_t workGroupCount = getWorkGroupCount(openList.size());
 
-    for (uint32_t i = 0; i < getWorkGroupCount(openList.size()); i++) {
-        Score score = readBack[i];
-        if (score.score < bestScore) {
-            result = score.index;
-            bestScore = score.score;
+    for (uint32_t i = 0; i < colors.size(); i++) {
+        uint32_t start = i * getWorkGroupCount(m_size.x * m_size.y);
+        uint32_t bestScore = std::numeric_limits<uint32_t>::max();
+        uint32_t result = 0;
+
+        for (uint32_t j = 0; j < workGroupCount; j++) {
+            Score score = readBack[start + j];
+            if (score.score < bestScore) {
+                result = score.index;
+                bestScore = score.score;
+            }
         }
-    }
 
-    glm::ivec2 pos = openList[result];
-    Color32& existingColor = m_bitmap.getPixel(pos.x, pos.y);
-    if (existingColor.a == 0) {
-        m_colorQueue->enqueue(pos, color);
-        existingColor = color;
-        addNeighborsToOpenSet(pos);
-        m_openSet.erase(pos);
-        m_queue.push({ color, pos });
-    } else {
-        m_source->resubmit(color);
+        glm::ivec2 pos = openList[result];
+        Color32& existingColor = m_bitmap.getPixel(pos.x, pos.y);
+        if (existingColor.a == 0) {
+            m_colorQueue->enqueue(pos, colors[i]);
+            existingColor = colors[i];
+            addNeighborsToOpenSet(pos);
+            m_openSet.erase(pos);
+            m_queue.push({ colors[i], pos });
+        } else {
+            m_source->resubmit(colors[i]);
+        }
     }
 }
 
@@ -328,10 +353,10 @@ void ComputeGenerator::createInputBuffers() {
     }
 }
 
-void ComputeGenerator::createReadBuffers() {
+void ComputeGenerator::createOutputBuffers() {
     for (size_t i = 0; i < FRAMES; i++) {
         vk::BufferCreateInfo info = {};
-        info.size = sizeof(Score) * getWorkGroupCount(m_size.x * m_size.y);
+        info.size = sizeof(Score) * getWorkGroupCount(m_size.x * m_size.y) * BATCH_SIZE;
         info.usage = vk::BufferUsageFlags::StorageBuffer;
 
         m_readBuffers.emplace_back(m_core->device(), info);
@@ -471,17 +496,22 @@ void ComputeGenerator::createMainPipelineLayout() {
 void ComputeGenerator::createMainPipeline(const std::string& shader) {
     vk::ShaderModule module = loadShader(m_core->device(), shader);
 
-    uint32_t specData = GROUP_SIZE;
+    uint32_t specData[] = { GROUP_SIZE, getWorkGroupCount(m_size.x * m_size.y) };
 
-    vk::SpecializationMapEntry entry = {};
-    entry.constantID = 0;
-    entry.size = sizeof(uint32_t);
-    entry.offset = 0;
+    vk::SpecializationMapEntry entry0 = {};
+    entry0.constantID = 0;
+    entry0.size = sizeof(uint32_t);
+    entry0.offset = 0;
+
+    vk::SpecializationMapEntry entry1 = {};
+    entry1.constantID = 1;
+    entry1.size = sizeof(uint32_t);
+    entry1.offset = sizeof(uint32_t);
 
     vk::SpecializationInfo specInfo = {};
     specInfo.dataSize = sizeof(specData);
     specInfo.data = &specData;
-    specInfo.mapEntries = { entry };
+    specInfo.mapEntries = { entry0, entry1 };
 
     vk::PipelineShaderStageCreateInfo shaderInfo = {};
     shaderInfo.module = &module;
