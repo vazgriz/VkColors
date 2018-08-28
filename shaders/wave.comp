@@ -16,8 +16,13 @@ layout(set = 0, binding = 1) buffer Input {
     ivec2[] data;
 } inputData;
 
+struct Score {
+    uint score;
+    uint index;
+};
+
 layout(set = 0, binding = 2) buffer Output {
-    uint[] scores;
+    Score[] scores;
 } outputData;
 
 int length2(ivec3 v) {
@@ -25,8 +30,12 @@ int length2(ivec3 v) {
 }
 
 void main() {
+    outputData.scores[gl_WorkGroupID.x].score = UMAX;
+    outputData.scores[gl_WorkGroupID.x].index = UMAX;
+
+    barrier();
+
     if (gl_GlobalInvocationID.x >= info.count) {
-        outputData.scores[gl_GlobalInvocationID.x] = UMAX;
         return;
     }
 
@@ -55,5 +64,11 @@ void main() {
         }
     }
 
-    outputData.scores[gl_GlobalInvocationID.x] = bestScore;
+    atomicMin(outputData.scores[gl_WorkGroupID.x].score, bestScore);
+
+    barrier();
+
+    if (outputData.scores[gl_WorkGroupID.x].score == bestScore) {
+        atomicMin(outputData.scores[gl_WorkGroupID.x].index, gl_GlobalInvocationID.x);
+    }
 }

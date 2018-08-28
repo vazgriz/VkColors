@@ -187,16 +187,21 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
     commandBuffer.dispatch(mainGroups, 1, 1);
 }
 
+struct Score {
+    uint32_t score;
+    uint32_t index;
+};
+
 void ComputeGenerator::readResult(size_t index, std::vector<glm::ivec2>& openList, Color32 color) {
     uint32_t bestScore = std::numeric_limits<uint32_t>::max();
     uint32_t result = 0;
-    uint32_t* readBack = static_cast<uint32_t*>(m_readMappings[index]);
+    Score* readBack = static_cast<Score*>(m_readMappings[index]);
 
-    for (uint32_t i = 0; i < openList.size(); i++) {
-        uint32_t score = readBack[i];
-        if (score < bestScore) {
-            result = i;
-            bestScore = score;
+    for (uint32_t i = 0; i < getWorkGroupCount(openList.size()); i++) {
+        Score score = readBack[i];
+        if (score.score < bestScore) {
+            result = score.index;
+            bestScore = score.score;
         }
     }
 
@@ -326,7 +331,7 @@ void ComputeGenerator::createInputBuffers() {
 void ComputeGenerator::createReadBuffers() {
     for (size_t i = 0; i < FRAMES; i++) {
         vk::BufferCreateInfo info = {};
-        info.size = sizeof(uint32_t) * m_size.x * m_size.y;
+        info.size = sizeof(Score) * getWorkGroupCount(m_size.x * m_size.y);
         info.usage = vk::BufferUsageFlags::StorageBuffer;
 
         m_readBuffers.emplace_back(m_core->device(), info);
