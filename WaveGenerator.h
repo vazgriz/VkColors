@@ -6,7 +6,6 @@
 #include <atomic>
 #include <glm/glm.hpp>
 #include <unordered_set>
-#include "Semaphore.h"
 #include "ColorSource.h"
 #include "Bitmap.h"
 #include "Utilities.h"

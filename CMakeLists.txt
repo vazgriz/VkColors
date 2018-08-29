@@ -48,7 +48,6 @@ add_executable(VkColors WIN32
     WaveGenerator2.cpp
     CoralGenerator.cpp
     Staging.cpp
-    Semaphore.cpp
     ColorQueue.cpp
 )
 target_include_directories(VkColors PUBLIC ${GLFW_INCLUDE} ${VULKAN_INCLUDE} ${VKW_INCLUDE} ${GLM_INCLUDE})
