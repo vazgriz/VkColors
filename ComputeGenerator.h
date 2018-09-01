@@ -21,6 +21,15 @@ class ComputeGenerator : public Generator {
         glm::ivec2 pos;
     };
 
+    struct FrameData {
+        std::unique_ptr<vk::Buffer> inputBuffer;
+        void* inputMapping;
+        std::unique_ptr<vk::Buffer> outputBuffer;
+        void* outputMapping;
+        std::unique_ptr<vk::DescriptorSet> descriptor;
+        std::unique_ptr<vk::CommandBuffer> commandBuffer;
+    };
+
 public:
     ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, glm::ivec2 size, ColorQueue& colorQueue, const std::string& shader);
     ComputeGenerator(const ComputeGenerator& other) = delete;
@@ -41,15 +50,10 @@ private:
     Bitmap m_bitmap;
     std::unique_ptr<vk::Image> m_texture;
     std::unique_ptr<vk::ImageView> m_textureView;
-    std::vector<vk::Buffer> m_inputBuffers;
-    std::vector<void*> m_inputMappings;
-    std::vector<vk::Buffer> m_readBuffers;
-    std::vector<void*> m_readMappings;
+    std::vector<FrameData> m_frameData;
     std::unique_ptr<vk::DescriptorSetLayout> m_descriptorSetLayout;
     std::unique_ptr<vk::DescriptorPool> m_descriptorPool;
-    std::vector<vk::DescriptorSet> m_descriptorSets;
     std::unique_ptr<vk::CommandPool> m_commandPool;
-    std::vector<vk::CommandBuffer> m_commandBuffers;
     std::unique_ptr<vk::PipelineLayout> m_updatePipelineLayout;
     std::unique_ptr<vk::Pipeline> m_updatePipeline;
     std::unique_ptr<vk::PipelineLayout> m_mainPipelineLayout;

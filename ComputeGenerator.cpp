@@ -19,6 +19,7 @@ ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource
     m_source = &source;
     m_size = size;
     m_colorQueue = &colorQueue;
+    m_frameData.resize(FRAMES);
 
     m_running = std::make_unique<std::atomic_bool>();
 
@@ -71,6 +72,7 @@ void ComputeGenerator::generatorLoop() {
 
         auto& openList = openLists[index];
         auto& colorList = colors[index];
+        auto& frameData = m_frameData[index];
 
         if (m_openSet.size() == 0) break;
         if (!m_source->hasNext()) break;
@@ -89,9 +91,9 @@ void ComputeGenerator::generatorLoop() {
             openList.push_back(pos);
         }
 
-        memcpy(m_inputMappings[index], openList.data(), openList.size() * sizeof(glm::ivec2));
+        memcpy(frameData.inputMapping, openList.data(), openList.size() * sizeof(glm::ivec2));
 
-        vk::CommandBuffer& commandBuffer = m_commandBuffers[index];
+        vk::CommandBuffer& commandBuffer = *frameData.commandBuffer;
         commandBuffer.reset(vk::CommandBufferResetFlags::None);
 
         vk::CommandBufferBeginInfo beginInfo = {};
@@ -136,6 +138,8 @@ struct MainPushConstants {
 };
 
 void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, std::vector<Color32>& colors, size_t index) {
+    auto& frameData = m_frameData[index];
+
     vk::ImageMemoryBarrier barrier = {};
     barrier.image = m_texture.get();
     barrier.oldLayout = vk::ImageLayout::General;
@@ -158,7 +162,7 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
         m_queue.pop();
 
         commandBuffer.bindPipeline(vk::PipelineBindPoint::Compute, *m_updatePipeline);
-        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::Compute, *m_updatePipelineLayout, 0, { m_descriptorSets[index] }, {});
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::Compute, *m_updatePipelineLayout, 0, { *frameData.descriptor }, {});
 
         UpdatePushConstants updateConstants = {};
         updateConstants.color = glm::ivec4{ item.color.r, item.color.g, item.color.b, 255 };
@@ -183,7 +187,7 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
         colors.push_back(color);
 
         commandBuffer.bindPipeline(vk::PipelineBindPoint::Compute, *m_mainPipeline);
-        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::Compute, *m_mainPipelineLayout, 0, { m_descriptorSets[index] }, {});
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::Compute, *m_mainPipelineLayout, 0, { *frameData.descriptor }, {});
 
         MainPushConstants mainConstants = {};
         mainConstants.count = static_cast<uint32_t>(openList.size());
@@ -197,7 +201,7 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
     }
 
     vk::BufferMemoryBarrier bufferBarrier = {};
-    bufferBarrier.buffer = &m_readBuffers[index];
+    bufferBarrier.buffer = frameData.outputBuffer.get();
     bufferBarrier.size = VK_WHOLE_SIZE;
     bufferBarrier.srcAccessMask = vk::AccessFlags::ShaderWrite | vk::AccessFlags::ShaderRead;
     bufferBarrier.dstAccessMask = vk::AccessFlags::HostRead;
@@ -213,7 +217,9 @@ struct Score {
 };
 
 void ComputeGenerator::readResult(size_t index, std::vector<glm::ivec2>& openList, std::vector<Color32>& colors) {
-    Score* readBack = static_cast<Score*>(m_readMappings[index]);
+    auto& frameData = m_frameData[index];
+
+    Score* readBack = static_cast<Score*>(frameData.outputMapping);
     uint32_t workGroupCount = getWorkGroupCount(openList.size());
 
     for (uint32_t i = 0; i < colors.size(); i++) {
@@ -282,7 +288,11 @@ void ComputeGenerator::createCommandBuffers() {
     info.commandPool = m_commandPool.get();
     info.commandBufferCount = FRAMES;
 
-    m_commandBuffers = m_commandPool->allocate(info);
+    auto commandBuffers = m_commandPool->allocate(info);
+
+    for (size_t i = 0; i < FRAMES; i++) {
+        m_frameData[i].commandBuffer = std::make_unique<vk::CommandBuffer>(std::move(commandBuffers[i]));
+    }
 }
 
 void ComputeGenerator::createTexture() {
@@ -339,33 +349,37 @@ void ComputeGenerator::createTextureView() {
 
 void ComputeGenerator::createInputBuffers() {
     for (size_t i = 0; i < FRAMES; i++) {
+        auto& frameData = m_frameData[i];
+
         vk::BufferCreateInfo info = {};
         info.size = sizeof(glm::ivec2) * m_size.x * m_size.y;
         info.usage = vk::BufferUsageFlags::StorageBuffer | vk::BufferUsageFlags::TransferDst;
 
-        m_inputBuffers.emplace_back(m_core->device(), info);
+        frameData.inputBuffer = std::make_unique<vk::Buffer>(m_core->device(), info);
 
-        Allocation alloc = m_allocator->allocate(m_inputBuffers[i].requirements(),
+        Allocation alloc = m_allocator->allocate(frameData.inputBuffer->requirements(),
             vk::MemoryPropertyFlags::HostVisible | vk::MemoryPropertyFlags::HostCoherent | vk::MemoryPropertyFlags::DeviceLocal,
             vk::MemoryPropertyFlags::HostVisible | vk::MemoryPropertyFlags::HostCoherent);
-        m_inputBuffers[i].bind(*alloc.memory, alloc.offset);
-        m_inputMappings.push_back(m_allocator->getMapping(alloc.memory, alloc.offset));
+        frameData.inputBuffer->bind(*alloc.memory, alloc.offset);
+        frameData.inputMapping = m_allocator->getMapping(alloc.memory, alloc.offset);
     }
 }
 
 void ComputeGenerator::createOutputBuffers() {
     for (size_t i = 0; i < FRAMES; i++) {
+        auto& frameData = m_frameData[i];
+
         vk::BufferCreateInfo info = {};
         info.size = sizeof(Score) * getWorkGroupCount(m_size.x * m_size.y) * BATCH_SIZE;
         info.usage = vk::BufferUsageFlags::StorageBuffer;
 
-        m_readBuffers.emplace_back(m_core->device(), info);
+        frameData.outputBuffer = std::make_unique<vk::Buffer>(m_core->device(), info);
 
-        Allocation alloc = m_allocator->allocate(m_readBuffers[i].requirements(),
+        Allocation alloc = m_allocator->allocate(frameData.outputBuffer->requirements(),
             vk::MemoryPropertyFlags::HostVisible | vk::MemoryPropertyFlags::HostCoherent | vk::MemoryPropertyFlags::HostCached,
             vk::MemoryPropertyFlags::HostVisible | vk::MemoryPropertyFlags::HostCoherent);
-        m_readBuffers[i].bind(*alloc.memory, alloc.offset);
-        m_readMappings.push_back(m_allocator->getMapping(alloc.memory, alloc.offset));
+        frameData.outputBuffer->bind(*alloc.memory, alloc.offset);
+        frameData.outputMapping = m_allocator->getMapping(alloc.memory, alloc.offset);
     }
 }
 
@@ -415,37 +429,43 @@ void ComputeGenerator::createDescriptorSets() {
     info.descriptorPool = m_descriptorPool.get();
     info.setLayouts = { *m_descriptorSetLayout, *m_descriptorSetLayout };
     
-    m_descriptorSets = m_descriptorPool->allocate(info);
+    auto descriptorSets = m_descriptorPool->allocate(info);
+
+    for (size_t i = 0; i < FRAMES; i++) {
+        m_frameData[i].descriptor = std::make_unique<vk::DescriptorSet>(std::move(descriptorSets[i]));
+    }
 }
 
 void ComputeGenerator::writeDescriptors() {
     for (size_t i = 0; i < FRAMES; i++) {
+        auto& frameData = m_frameData[i];
+
         vk::DescriptorImageInfo imageInfo = {};
         imageInfo.imageView = m_textureView.get();
         imageInfo.imageLayout = vk::ImageLayout::General;
 
         vk::DescriptorBufferInfo bufferInfo0 = {};
-        bufferInfo0.buffer = &m_inputBuffers[i];
-        bufferInfo0.range = m_inputBuffers[i].size();
+        bufferInfo0.buffer = frameData.inputBuffer.get();
+        bufferInfo0.range = frameData.inputBuffer->size();
 
         vk::DescriptorBufferInfo bufferInfo1 = {};
-        bufferInfo1.buffer = &m_readBuffers[i];
-        bufferInfo1.range = m_readBuffers[i].size();
+        bufferInfo1.buffer = frameData.outputBuffer.get();
+        bufferInfo1.range = frameData.outputBuffer->size();
 
         vk::WriteDescriptorSet write0 = {};
-        write0.dstSet = &m_descriptorSets[i];
+        write0.dstSet = frameData.descriptor.get();
         write0.dstBinding = 0;
         write0.imageInfo = { imageInfo };
         write0.descriptorType = vk::DescriptorType::StorageImage;
 
         vk::WriteDescriptorSet write1 = {};
-        write1.dstSet = &m_descriptorSets[i];
+        write1.dstSet = frameData.descriptor.get();
         write1.dstBinding = 1;
         write1.bufferInfo = { bufferInfo0 };
         write1.descriptorType = vk::DescriptorType::StorageBuffer;
 
         vk::WriteDescriptorSet write2 = {};
-        write2.dstSet = &m_descriptorSets[i];
+        write2.dstSet = frameData.descriptor.get();
         write2.dstBinding = 2;
         write2.bufferInfo = { bufferInfo1 };
         write2.descriptorType = vk::DescriptorType::StorageBuffer;
