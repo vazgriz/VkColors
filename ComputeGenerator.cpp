@@ -359,7 +359,7 @@ void ComputeGenerator::createPositionBuffers() {
 
         vk::BufferCreateInfo info = {};
         info.size = sizeof(glm::ivec2) * m_size.x * m_size.y;
-        info.usage = vk::BufferUsageFlags::StorageBuffer | vk::BufferUsageFlags::TransferDst;
+        info.usage = vk::BufferUsageFlags::StorageBuffer;
 
         frameData.positionBuffer = std::make_unique<vk::Buffer>(m_core->device(), info);
 
@@ -377,7 +377,7 @@ void ComputeGenerator::createColorBuffers() {
 
         vk::BufferCreateInfo info = {};
         info.size = sizeof(glm::ivec4) * BATCH_SIZE;
-        info.usage = vk::BufferUsageFlags::StorageBuffer | vk::BufferUsageFlags::TransferDst;
+        info.usage = vk::BufferUsageFlags::StorageBuffer;
 
         frameData.colorBuffer = std::make_unique<vk::Buffer>(m_core->device(), info);
 
