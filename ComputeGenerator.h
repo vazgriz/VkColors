@@ -22,8 +22,10 @@ class ComputeGenerator : public Generator {
     };
 
     struct FrameData {
-        std::unique_ptr<vk::Buffer> inputBuffer;
-        void* inputMapping;
+        std::unique_ptr<vk::Buffer> positionBuffer;
+        void* positionMapping;
+        std::unique_ptr<vk::Buffer> colorBuffer;
+        void* colorMapping;
         std::unique_ptr<vk::Buffer> outputBuffer;
         void* outputMapping;
         std::unique_ptr<vk::DescriptorSet> descriptor;
@@ -67,12 +69,13 @@ private:
     std::unique_ptr<std::atomic_bool> m_running;
     std::queue<ColorPos> m_queue;
 
-    void record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, std::vector<Color32>& colors, size_t index);
+    void record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, std::vector<Color32>& colors, size_t index, uint32_t batchSize);
     void createCommandPool();
     void createCommandBuffers();
     void createTexture();
     void createTextureView();
-    void createInputBuffers();
+    void createPositionBuffers();
+    void createColorBuffers();
     void createOutputBuffers();
     void createDescriptorSetLayout();
     void createDescriptorPool();

@@ -7,23 +7,26 @@ layout(local_size_x_id = 0) in;
 layout(constant_id = 1) const uint maxWorkGroups = 1;
 
 layout(push_constant) uniform Info {
-    ivec4 color;
     int count;
     uint batchID;
 } info;
 
 layout(set = 0, binding = 0, rgba8i) uniform iimage2D image;
 
-layout(set = 0, binding = 1) buffer Input {
+layout(set = 0, binding = 1) buffer Positions {
     ivec2[] data;
-} inputData;
+} positions;
+
+layout(set = 0, binding = 2) buffer Colors {
+    ivec4[] data;
+} colors;
 
 struct Score {
     uint score;
     uint index;
 };
 
-layout(set = 0, binding = 2) buffer Output {
+layout(set = 0, binding = 3) buffer Output {
     Score[] scores;
 } outputData;
 
@@ -42,7 +45,7 @@ void main() {
         return;
     }
 
-    ivec2 pos = inputData.data[gl_GlobalInvocationID.x];
+    ivec2 pos = positions.data[gl_GlobalInvocationID.x];
     ivec2[8] neighbors = ivec2[](
         pos + ivec2(-1, -1),
         pos + ivec2(-1,  0),
@@ -55,12 +58,13 @@ void main() {
     );
 
     uint bestScore = UMAX;
+    ivec4 testColor = colors.data[info.batchID];
 
     for (int i = 0; i < 8; i++) {
         ivec2 n = neighbors[i];
         ivec4 color = imageLoad(image, n);
         if (color.a != 0) {
-            uint score = length2(info.color.rgb - color.rgb);
+            uint score = length2(testColor.rgb - color.rgb);
             if (score < bestScore) {
                 bestScore = score;
             }
