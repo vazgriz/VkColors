@@ -7,7 +7,7 @@ layout(local_size_x_id = 0) in;
 layout(constant_id = 1) const uint maxWorkGroups = 1;
 
 layout(push_constant) uniform Info {
-    int count;
+    uint count;
     uint batchID;
 } info;
 
