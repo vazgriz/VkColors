@@ -46,21 +46,21 @@ void main() {
 
     ivec2 pos = positions.data[gl_GlobalInvocationID.x];
     ivec2[8] neighbors = ivec2[](
-        pos + ivec2(-1, -1),
-        pos + ivec2(-1,  0),
-        pos + ivec2(-1,  1),
-        pos + ivec2( 0, -1),
-        pos + ivec2( 0,  1),
-        pos + ivec2( 1, -1),
-        pos + ivec2( 1,  0),
-        pos + ivec2( 1,  1)
+        ivec2(-1, -1),
+        ivec2(-1,  0),
+        ivec2(-1,  1),
+        ivec2( 0, -1),
+        ivec2( 0,  1),
+        ivec2( 1, -1),
+        ivec2( 1,  0),
+        ivec2( 1,  1)
     );
 
     uint bestScore = UMAX;
     ivec4 testColor = colors.data[gl_WorkGroupID.y];
 
     for (int i = 0; i < 8; i++) {
-        ivec2 n = neighbors[i];
+        ivec2 n = pos + neighbors[i];
         ivec4 color = imageLoad(image, n);
         if (color.a != 0) {
             uint score = length2(testColor.rgb - color.rgb);
