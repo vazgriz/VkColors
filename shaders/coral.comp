@@ -8,7 +8,6 @@ layout(constant_id = 1) const uint maxWorkGroups = 1;
 
 layout(push_constant) uniform Info {
     uint count;
-    uint batchID;
 } info;
 
 layout(set = 0, binding = 0, rgba8i) uniform iimage2D image;
@@ -35,7 +34,7 @@ int length2(ivec3 v) {
 }
 
 void main() {
-    uint offset = info.batchID * maxWorkGroups;
+    uint offset = gl_WorkGroupID.y * maxWorkGroups;
     outputData.scores[offset + gl_WorkGroupID.x].score = UMAX;
     outputData.scores[offset + gl_WorkGroupID.x].index = UMAX;
 
@@ -59,7 +58,7 @@ void main() {
 
     uint sum = 0;
     uint count = 0;
-    ivec4 testColor = colors.data[info.batchID];
+    ivec4 testColor = colors.data[gl_WorkGroupID.y];
 
     for (int i = 0; i < 8; i++) {
         ivec2 n = neighbors[i];

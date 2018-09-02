@@ -148,7 +148,6 @@ struct UpdatePushConstants {
 
 struct MainPushConstants {
     uint32_t count;
-    uint32_t batchID;
 };
 
 void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, std::vector<Color32>& colors, size_t index, uint32_t batchSize) {
@@ -191,20 +190,16 @@ void ComputeGenerator::record(vk::CommandBuffer& commandBuffer, std::vector<glm:
 
     commandBuffer.pipelineBarrier(vk::PipelineStageFlags::ComputeShader, vk::PipelineStageFlags::ComputeShader, {}, {}, {}, { barrier });
 
-    //main shader
-    for (uint32_t i = 0; i < batchSize; i++) {
-        commandBuffer.bindPipeline(vk::PipelineBindPoint::Compute, *m_mainPipeline);
-        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::Compute, *m_mainPipelineLayout, 0, { *frameData.descriptor }, {});
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::Compute, *m_mainPipeline);
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::Compute, *m_mainPipelineLayout, 0, { *frameData.descriptor }, {});
 
-        MainPushConstants mainConstants = {};
-        mainConstants.count = static_cast<uint32_t>(openList.size());
-        mainConstants.batchID = i;
+    MainPushConstants mainConstants = {};
+    mainConstants.count = static_cast<uint32_t>(openList.size());
 
-        commandBuffer.pushConstants(*m_mainPipelineLayout, vk::ShaderStageFlags::Compute, 0, sizeof(MainPushConstants), &mainConstants);
+    commandBuffer.pushConstants(*m_mainPipelineLayout, vk::ShaderStageFlags::Compute, 0, sizeof(MainPushConstants), &mainConstants);
 
-        uint32_t mainGroups = getWorkGroupCount(openList.size());
-        commandBuffer.dispatch(mainGroups, 1, 1);
-    }
+    uint32_t mainGroups = getWorkGroupCount(openList.size());
+    commandBuffer.dispatch(mainGroups, batchSize, 1);
 
     vk::BufferMemoryBarrier bufferBarrier = {};
     bufferBarrier.buffer = frameData.outputBuffer.get();
