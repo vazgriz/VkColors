@@ -5,7 +5,6 @@
 
 #define FRAMES 2
 #define GROUP_SIZE 64
-#define STAGING_SIZE (64 * 1024 * 1024)
 #define BATCH_SIZE 1024
 
 uint32_t getWorkGroupCount(size_t count) {
