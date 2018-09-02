@@ -34,9 +34,9 @@ int length2(ivec3 v) {
 }
 
 void main() {
-    uint offset = gl_WorkGroupID.y * maxWorkGroups;
-    outputData.scores[offset + gl_WorkGroupID.x].score = UMAX;
-    outputData.scores[offset + gl_WorkGroupID.x].index = UMAX;
+    uint offset = (gl_WorkGroupID.y * maxWorkGroups) + gl_WorkGroupID.x;
+    outputData.scores[offset].score = UMAX;
+    outputData.scores[offset].index = UMAX;
 
     barrier();
 
@@ -71,11 +71,11 @@ void main() {
 
     uint bestScore = uint(sum / float(count));
     
-    atomicMin(outputData.scores[offset + gl_WorkGroupID.x].score, bestScore);
+    atomicMin(outputData.scores[offset].score, bestScore);
 
     barrier();
 
-    if (outputData.scores[offset + gl_WorkGroupID.x].score == bestScore) {
-        atomicMin(outputData.scores[offset + gl_WorkGroupID.x].index, gl_GlobalInvocationID.x);
+    if (outputData.scores[offset].score == bestScore) {
+        atomicMin(outputData.scores[offset].index, gl_GlobalInvocationID.x);
     }
 }
