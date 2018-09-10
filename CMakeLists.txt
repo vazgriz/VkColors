@@ -49,6 +49,7 @@ add_executable(VkColors
     CoralGenerator.cpp
     Staging.cpp
     ColorQueue.cpp
+    Options.cpp
 )
 target_include_directories(VkColors PUBLIC ${GLFW_INCLUDE} ${VULKAN_INCLUDE} ${VKW_INCLUDE} ${GLM_INCLUDE})
 target_link_libraries(VkColors ${GLFW_LIB} ${VULKAN_LIB} ${VKW_LIB})

@@ -12,9 +12,16 @@
 #include "WaveGenerator2.h"
 #include "CoralGenerator.h"
 #include "ColorQueue.h"
+#include "Options.h"
 
-int main() {
+int main(int argc, char** argv) {
     auto last = std::chrono::system_clock::now();
+    Options options = parseArguments(argc, argv);
+
+    if (!options.valid) {
+        return EXIT_FAILURE;
+    }
+
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -27,7 +34,7 @@ int main() {
     ColorQueue colorQueue;
     Renderer renderer = Renderer(core, allocator, size, colorQueue);
     ShuffleSource source = ShuffleSource(6);
-    std::unique_ptr<Generator> generator = std::make_unique<ComputeGenerator>(core, allocator, source, size, colorQueue, "shaders/coral.comp.spv");
+    std::unique_ptr<Generator> generator = std::make_unique<ComputeGenerator>(core, allocator, source, size, colorQueue, options.shader);
     generator->run();
 
     size_t frames = 0;
