@@ -35,7 +35,7 @@ add_custom_target(
     DEPENDS ${SPIRV_BINARY_FILES}
 )
 
-add_executable(VkColors WIN32
+add_executable(VkColors
     main.cpp
     Core.cpp
     Bitmap.cpp
@@ -53,7 +53,3 @@ add_executable(VkColors WIN32
 target_include_directories(VkColors PUBLIC ${GLFW_INCLUDE} ${VULKAN_INCLUDE} ${VKW_INCLUDE} ${GLM_INCLUDE})
 target_link_libraries(VkColors ${GLFW_LIB} ${VULKAN_LIB} ${VKW_LIB})
 add_dependencies(VkColors Shaders)
-
-if (MSVC)
-    set(CMAKE_CREATE_WIN32_EXE "/SUBSYSTEM:WINDOWS /ENTRY:\"mainCRTStartup\"")
-endif()
