@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
     Allocator allocator = Allocator(core);
     ColorQueue colorQueue;
     Renderer renderer = Renderer(core, allocator, options.size, colorQueue);
-    ShuffleSource source = ShuffleSource(6);
+    ShuffleSource source = ShuffleSource(options.bitDepth);
     std::unique_ptr<Generator> generator = std::make_unique<ComputeGenerator>(core, allocator, source, options.size, colorQueue, options.shader);
     generator->run();
 

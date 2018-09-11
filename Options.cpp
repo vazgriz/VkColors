@@ -77,8 +77,21 @@ void parseSize(Options& options, const std::string& size) {
     options.size = { width, height };
 }
 
+int32_t getBitDepth(glm::ivec2 size) {
+    int32_t area = size.x * size.y;
+    double bitDepth = std::ceil(std::log2(area) / 3);
+    return static_cast<int32_t>(bitDepth);
+}
+
 Options parseArguments(int argc, char** argv) {
-    Options options = { true, "shaders/coral.comp.spv", { 512, 512 } };
+    Options options = {
+        true,
+        "shaders/coral.comp.spv",
+        { 512, 512 },
+        6
+    };
+
+    bool userDepth = false;
 
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
@@ -97,6 +110,18 @@ Options parseArguments(int argc, char** argv) {
             }
         } else if (argument.name == "size") {
             parseSize(options, argument.value);
+
+            if (!userDepth) {
+                options.bitDepth = getBitDepth(options.size);
+            }
+        } else if (argument.name == "bitdepth") {
+            try {
+                options.bitDepth = std::stoi(argument.value);
+                userDepth = true;
+            }
+            catch (...) {
+                argumentError(options, "Unable to parse bit depth");
+            }
         } else {
             std::cout << "Error: Could not parse argument '" << argument.name << "'\n";
             options.valid = false;
