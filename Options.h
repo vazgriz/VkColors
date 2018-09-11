@@ -10,6 +10,8 @@ struct Options {
     int32_t bitDepth;
     uint32_t workGroupSize;
     bool userWorkGroupSize;
+    uint32_t maxBatchAbsolute;
+    uint32_t maxBatchRelative;
 };
 
 Options parseArguments(int argc, char** argv);

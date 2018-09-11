@@ -89,10 +89,14 @@ Options parseArguments(int argc, char** argv) {
         "shaders/coral.comp.spv",
         { 512, 512 },
         6,
-        32, false
+        32, false,
+        1024,
+        1024
     };
 
     bool userDepth = false;
+    bool userMaxBatchAbsolute = false;
+    bool userMaxBatchRelative = false;
 
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
@@ -106,6 +110,14 @@ Options parseArguments(int argc, char** argv) {
                 argumentError(options, "Must specify shader to use");
             } else if (argument.value == "wave" || argument.value == "coral") {
                 options.shader = "shaders/" + argument.value + ".comp.spv";
+
+                if (!userMaxBatchRelative) {
+                    if (argument.value == "wave") {
+                        options.maxBatchRelative = 64;
+                    } else {
+                        options.maxBatchRelative = 1024;
+                    }
+                }
             } else {
                 argumentError(options, "Shader must be 'wave' or 'coral'");
             }
@@ -138,6 +150,22 @@ Options parseArguments(int argc, char** argv) {
             }
             catch (...) {
                 argumentError(options, "Unable to parse work group size");
+            }
+        } else if (argument.name == "maxbatchabsolute") {
+            try {
+                options.maxBatchAbsolute = std::stoul(argument.value);
+                userMaxBatchAbsolute = true;
+            }
+            catch (...) {
+                argumentError(options, "Unable to parse max batch absolute");
+            }
+        } else if (argument.name == "maxbatchrelative") {
+            try {
+                options.maxBatchRelative = std::stoul(argument.value);
+                userMaxBatchRelative = true;
+            }
+            catch (...) {
+                argumentError(options, "Unable to parse max batch relative");
             }
         } else {
             std::cout << "Error: Could not parse argument '" << argument.name << "'\n";
