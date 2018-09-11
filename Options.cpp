@@ -122,6 +122,14 @@ Options parseArguments(int argc, char** argv) {
             catch (...) {
                 argumentError(options, "Unable to parse bit depth");
             }
+
+            if (options.bitDepth < 0) {
+                argumentError(options, "Bit depth must be positive");
+            }
+
+            if (options.bitDepth > 8) {
+                argumentError(options, "Bit depth must be less than or equal to 8");
+            }
         } else {
             std::cout << "Error: Could not parse argument '" << argument.name << "'\n";
             options.valid = false;
