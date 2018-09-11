@@ -227,18 +227,31 @@ bool Core::isDeviceSuitable(const vk::PhysicalDevice& physicalDevice) {
 
 void Core::selectPhysicalDevice() {
     auto& physicalDevices = m_instance->physicalDevices();
-    if (physicalDevices.size() == 0) throw std::runtime_error("Failed to find physical devices");
+    std::vector<const vk::PhysicalDevice*> candidates;
 
     for (auto& physicalDevice : physicalDevices) {
         if (isDeviceSuitable(physicalDevice)) {
-            this->m_physicalDevice = &physicalDevice;
+            candidates.push_back(&physicalDevice);
+        }
+    }
+
+    if (candidates.size() == 0) throw std::runtime_error("Failed to find suitable physical device");
+
+    for (auto physicalDevice : candidates) {
+        if (physicalDevice->properties().deviceType == vk::PhysicalDeviceType::DiscreteGpu) {
+            this->m_physicalDevice = physicalDevice;
             break;
         }
     }
 
-    if (m_physicalDevice == nullptr) {
-        throw std::runtime_error("Failed to find a suitable physical device");
+    for (auto physicalDevice : candidates) {
+        if (physicalDevice->properties().deviceType == vk::PhysicalDeviceType::DiscreteGpu) {
+            m_physicalDevice = physicalDevice;
+            break;
+        }
     }
+
+    m_physicalDevice = candidates[0];
 }
 
 void Core::createDevice() {
