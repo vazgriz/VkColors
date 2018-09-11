@@ -14,6 +14,7 @@
 #include "Staging.h"
 #include "Utilities.h"
 #include "ColorQueue.h"
+#include "Options.h"
 
 class ComputeGenerator : public Generator {
     struct ColorPos {
@@ -33,7 +34,7 @@ class ComputeGenerator : public Generator {
     };
 
 public:
-    ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, glm::ivec2 size, ColorQueue& colorQueue, const std::string& shader);
+    ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, ColorQueue& colorQueue, Options& options);
     ComputeGenerator(const ComputeGenerator& other) = delete;
     ComputeGenerator& operator = (const ComputeGenerator& other) = delete;
     ComputeGenerator(ComputeGenerator&& other);

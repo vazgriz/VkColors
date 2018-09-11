@@ -5,12 +5,12 @@
 
 #define FRAMES 2
 
-ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, glm::ivec2 size, ColorQueue& colorQueue, const std::string& shader)
-    : m_bitmap(size.x, size.y) {
+ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, ColorQueue& colorQueue, Options& options)
+    : m_bitmap(options.size.x, options.size.y) {
     m_core = &core;
     m_allocator = &allocator;
     m_source = &source;
-    m_size = size;
+    m_size = options.size;
     m_colorQueue = &colorQueue;
     m_frameData.resize(FRAMES);
 
@@ -34,7 +34,7 @@ ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource
     createUpdatePipelineLayout();
     createUpdatePipeline();
     createMainPipelineLayout();
-    createMainPipeline(shader);
+    createMainPipeline(options.shader);
     createFences();
 
     glm::ivec2 pos = m_size / 2;
