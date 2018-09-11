@@ -20,7 +20,7 @@ Argument parseArgument(const std::string& arg) {
     }
 
     if (start == 0) {
-        std::cout << "Error: Could not parse " << arg << ". Start arguments with '-' or '--'";
+        std::cout << "Error: Could not parse '" << arg << "'. Start arguments with '-' or '--'";
         argument.valid = false;
     }
 
