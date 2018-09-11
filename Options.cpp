@@ -41,8 +41,44 @@ void argumentError(Options& options, const std::string& message) {
     std::cout << "Error: " << message << "\n";
 }
 
+void parseSize(Options& options, const std::string& size) {
+    size_t x = size.find("x");
+
+    if (x == std::string::npos) {
+        argumentError(options, "Size must have two dimensions, eg '512x512'");
+        return;
+    }
+
+    std::string widthString = size.substr(0, x);
+    std::string heightString = size.substr(x + 1);
+
+    int32_t width;
+    int32_t height;
+
+    try {
+        width = std::stoi(widthString);
+        height = std::stoi(heightString);
+    }
+    catch (...) {
+        argumentError(options, "Unable to parse size");
+        return;
+    }
+
+    if (width < 0 || height < 0) {
+        argumentError(options, "Width and height must be positive");
+        return;
+    }
+
+    if (width > 4096 || height > 4096) {
+        argumentError(options, "Width and height must be be less than or equal to 4096");
+        return;
+    }
+
+    options.size = { width, height };
+}
+
 Options parseArguments(int argc, char** argv) {
-    Options options = { true };
+    Options options = { true, "shaders/coral.comp.spv", { 512, 512 } };
 
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
@@ -53,12 +89,14 @@ Options parseArguments(int argc, char** argv) {
             continue;
         } else if (argument.name == "shader") {
             if (argument.value.empty()) {
-                argumentError( options, "Must specify shader to use");
+                argumentError(options, "Must specify shader to use");
             } else if (argument.value == "wave" || argument.value == "coral") {
                 options.shader = "shaders/" + argument.value + ".comp.spv";
             } else {
                 argumentError(options, "Shader must be 'wave' or 'coral'");
             }
+        } else if (argument.name == "size") {
+            parseSize(options, argument.value);
         } else {
             std::cout << "Error: Could not parse argument '" << argument.name << "'\n";
             options.valid = false;
