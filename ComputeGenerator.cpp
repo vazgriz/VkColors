@@ -16,7 +16,7 @@ ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource
 
     m_running = std::make_unique<std::atomic_bool>();
 
-    m_workGroupSize = 64;
+    m_workGroupSize = options.workGroupSize;
     m_maxBatchAbsolute = 1024;
     m_maxBatchRelative = 1024;
 

@@ -8,6 +8,8 @@ struct Options {
     std::string shader;
     glm::ivec2 size;
     int32_t bitDepth;
+    uint32_t workGroupSize;
+    bool userWorkGroupSize;
 };
 
 Options parseArguments(int argc, char** argv);

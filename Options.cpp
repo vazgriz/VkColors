@@ -88,7 +88,8 @@ Options parseArguments(int argc, char** argv) {
         true,
         "shaders/coral.comp.spv",
         { 512, 512 },
-        6
+        6,
+        32, false
     };
 
     bool userDepth = false;
@@ -129,6 +130,14 @@ Options parseArguments(int argc, char** argv) {
 
             if (options.bitDepth > 8) {
                 argumentError(options, "Bit depth must be less than or equal to 8");
+            }
+        } else if (argument.name == "workgroupsize") {
+            try {
+                options.workGroupSize = std::stoul(argument.value);
+                options.userWorkGroupSize = true;
+            }
+            catch (...) {
+                argumentError(options, "Unable to parse work group size");
             }
         } else {
             std::cout << "Error: Could not parse argument '" << argument.name << "'\n";

@@ -29,6 +29,12 @@ int main(int argc, char** argv) {
     GLFWwindow* window = glfwCreateWindow(800, 600, "Colors", nullptr, nullptr);
 
     Core core = Core(window);
+
+    if (!options.userWorkGroupSize && core.device().physicalDevice().properties().vendorID == 4130) {
+        //if work group size not specified and using AMD hardware
+        options.workGroupSize = 64;
+    }
+
     Allocator allocator = Allocator(core);
     ColorQueue colorQueue;
     Renderer renderer = Renderer(core, allocator, options.size, colorQueue);
