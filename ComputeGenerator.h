@@ -69,6 +69,10 @@ private:
     std::unique_ptr<std::atomic_bool> m_running;
     std::queue<ColorPos> m_queue;
 
+    uint32_t m_workGroupSize;
+    uint32_t m_maxBatchAbsolute;
+    uint32_t m_maxBatchRelative;
+
     void record(vk::CommandBuffer& commandBuffer, std::vector<glm::ivec2>& openList, std::vector<Color32>& colors, size_t index, uint32_t batchSize);
     void createCommandPool();
     void createCommandBuffers();
@@ -92,4 +96,5 @@ private:
     void readResult(size_t index, std::vector<glm::ivec2>& openList, std::vector<Color32>& colors);
 
     void generatorLoop();
+    uint32_t getWorkGroupCount(size_t count);
 };

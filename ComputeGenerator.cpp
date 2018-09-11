@@ -4,12 +4,6 @@
 #include <cmath>
 
 #define FRAMES 2
-#define GROUP_SIZE 64
-#define BATCH_SIZE 1024
-
-uint32_t getWorkGroupCount(size_t count) {
-    return static_cast<uint32_t>(count / GROUP_SIZE) + ((count % GROUP_SIZE) == 0 ? 0 : 1);
-}
 
 ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource& source, glm::ivec2 size, ColorQueue& colorQueue, const std::string& shader)
     : m_bitmap(size.x, size.y) {
@@ -21,6 +15,10 @@ ComputeGenerator::ComputeGenerator(Core& core, Allocator& allocator, ColorSource
     m_frameData.resize(FRAMES);
 
     m_running = std::make_unique<std::atomic_bool>();
+
+    m_workGroupSize = 64;
+    m_maxBatchAbsolute = 1024;
+    m_maxBatchRelative = 1024;
 
     createCommandPool();
     createCommandBuffers();
@@ -93,7 +91,7 @@ void ComputeGenerator::generatorLoop() {
 
         memcpy(frameData.positionMapping, openList.data(), openList.size() * sizeof(glm::ivec2));
 
-        uint32_t batchSize = std::max<uint32_t>(1, std::min<uint32_t>(BATCH_SIZE, static_cast<uint32_t>(openList.size() / 1024)));
+        uint32_t batchSize = std::max<uint32_t>(1, std::min<uint32_t>(m_maxBatchAbsolute, static_cast<uint32_t>(openList.size() / m_maxBatchRelative)));
         glm::ivec4* colorPtr = static_cast<glm::ivec4*>(frameData.colorMapping);
 
         for (uint32_t i = 0; i < batchSize; i++) {
@@ -370,7 +368,7 @@ void ComputeGenerator::createColorBuffers() {
         auto& frameData = m_frameData[i];
 
         vk::BufferCreateInfo info = {};
-        info.size = sizeof(glm::ivec4) * BATCH_SIZE;
+        info.size = sizeof(glm::ivec4) * m_maxBatchAbsolute;
         info.usage = vk::BufferUsageFlags::StorageBuffer;
 
         frameData.colorBuffer = std::make_unique<vk::Buffer>(m_core->device(), info);
@@ -388,7 +386,7 @@ void ComputeGenerator::createOutputBuffers() {
         auto& frameData = m_frameData[i];
 
         vk::BufferCreateInfo info = {};
-        info.size = sizeof(Score) * getWorkGroupCount(m_size.x * m_size.y) * BATCH_SIZE;
+        info.size = sizeof(Score) * getWorkGroupCount(m_size.x * m_size.y) * m_maxBatchAbsolute;
         info.usage = vk::BufferUsageFlags::StorageBuffer;
 
         frameData.outputBuffer = std::make_unique<vk::Buffer>(m_core->device(), info);
@@ -550,7 +548,7 @@ void ComputeGenerator::createMainPipelineLayout() {
 void ComputeGenerator::createMainPipeline(const std::string& shader) {
     vk::ShaderModule module = loadShader(m_core->device(), shader);
 
-    uint32_t specData[] = { GROUP_SIZE, getWorkGroupCount(m_size.x * m_size.y) };
+    uint32_t specData[] = { m_workGroupSize, getWorkGroupCount(m_size.x * m_size.y) };
 
     vk::SpecializationMapEntry entry0 = {};
     entry0.constantID = 0;
@@ -587,4 +585,8 @@ void ComputeGenerator::createFences() {
     for (size_t i = 0; i < FRAMES; i++) {
         m_fences.emplace_back(m_core->device(), info);
     }
+}
+
+uint32_t ComputeGenerator::getWorkGroupCount(size_t count) {
+    return static_cast<uint32_t>(count / m_workGroupSize) + ((count % m_workGroupSize) == 0 ? 0 : 1);
 }
