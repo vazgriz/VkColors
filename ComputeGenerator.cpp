@@ -2,6 +2,7 @@
 #include "Utilities.h"
 #include <iostream>
 #include <cmath>
+#include <chrono>
 
 #define FRAMES 2
 
@@ -64,6 +65,7 @@ void ComputeGenerator::generatorLoop() {
     std::this_thread::sleep_for(std::chrono::milliseconds(33));
     std::vector<std::vector<glm::ivec2>> openLists(FRAMES);
     std::vector<std::vector<Color32>> colors(FRAMES);
+    auto start = std::chrono::steady_clock::now();
 
     while (*m_running) {
         size_t index = m_frame % FRAMES;
@@ -136,6 +138,16 @@ void ComputeGenerator::generatorLoop() {
             readResult(index, openList, color);
         }
     }
+
+    auto end = std::chrono::steady_clock::now();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(33));
+
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+    if (elapsed == 0) elapsed = 1;
+    size_t totalPixels = m_colorQueue->totalCount();
+    size_t rate = totalPixels / elapsed;
+    std::cout << totalPixels << " in " << elapsed << "s (" << rate << " pps)\n";
 }
 
 struct UpdatePushConstants {
