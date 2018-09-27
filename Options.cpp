@@ -100,6 +100,7 @@ Options parseArguments(int argc, char** argv) {
         { 512, 512 },
         6,
         32, false,
+        64,
         1024,
         static_cast<uint32_t>(std::chrono::system_clock::now().time_since_epoch().count())
     };
