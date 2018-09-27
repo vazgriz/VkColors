@@ -101,8 +101,7 @@ Options parseArguments(int argc, char** argv) {
         6,
         32, false,
         1024,
-        1024,
-        std::chrono::system_clock::now().time_since_epoch().count()
+        static_cast<uint32_t>(std::chrono::system_clock::now().time_since_epoch().count())
     };
 
     bool userDepth = false;
