@@ -7,8 +7,9 @@ uint8_t map(size_t num, size_t bitDepth) {
     return static_cast<uint8_t>(num - 1);
 }
 
-ShuffleSource::ShuffleSource(size_t bitDepth) {
+ShuffleSource::ShuffleSource(const Options& options) {
     std::vector<Color32> colors;
+    uint32_t bitDepth = options.bitDepth;
 
     size_t max = static_cast<size_t>(pow(2, bitDepth));
     for (size_t r = 0; r < max; r++) {
@@ -22,6 +23,7 @@ ShuffleSource::ShuffleSource(size_t bitDepth) {
 
     //fisher yates shuffle
     std::default_random_engine random;
+    random.seed(options.seed);
 
     for (size_t i = colors.size() - 1; i >= 1; i--) {
         std::uniform_int_distribution<size_t> dist(0, i);

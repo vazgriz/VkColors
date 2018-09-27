@@ -1,9 +1,10 @@
 #include "ColorSource.h"
 #include <queue>
+#include "Options.h"
 
 class ShuffleSource : public ColorSource {
 public:
-    ShuffleSource(size_t bitDepth);
+    ShuffleSource(const Options& options);
     ShuffleSource(const ShuffleSource& other) = delete;
     ShuffleSource& operator = (const ShuffleSource& other) = delete;
     ShuffleSource(ShuffleSource&& other);

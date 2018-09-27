@@ -1,5 +1,7 @@
 #include "Options.h"
 #include <iostream>
+#include <chrono>
+#include <cctype>
 
 struct Argument {
     bool valid;
@@ -31,6 +33,14 @@ Argument parseArgument(const std::string& arg) {
     } else {
         argument.name = arg.substr(start, equals - start);
         argument.value = arg.substr(equals + 1);
+    }
+
+    for (char& c : argument.name) {
+        c = std::tolower(c);
+    }
+
+    for (char& c : argument.value) {
+        c = std::tolower(c);
     }
 
     return argument;
@@ -91,7 +101,8 @@ Options parseArguments(int argc, char** argv) {
         6,
         32, false,
         1024,
-        1024
+        1024,
+        std::chrono::system_clock::now().time_since_epoch().count()
     };
 
     bool userDepth = false;
@@ -163,6 +174,13 @@ Options parseArguments(int argc, char** argv) {
             try {
                 options.maxBatchRelative = std::stoul(argument.value);
                 userMaxBatchRelative = true;
+            }
+            catch (...) {
+                argumentError(options, "Unable to parse max batch relative");
+            }
+        } else if (argument.name == "seed") {
+            try {
+                options.seed = std::stoul(argument.value);
             }
             catch (...) {
                 argumentError(options, "Unable to parse max batch relative");

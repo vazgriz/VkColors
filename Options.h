@@ -12,6 +12,7 @@ struct Options {
     bool userWorkGroupSize;
     uint32_t maxBatchAbsolute;
     uint32_t maxBatchRelative;
+    uint32_t seed;
 };
 
 Options parseArguments(int argc, char** argv);
