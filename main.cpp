@@ -39,7 +39,14 @@ int main(int argc, char** argv) {
     Allocator allocator = Allocator(core);
     ColorQueue colorQueue;
     Renderer renderer = Renderer(core, allocator, options.size, colorQueue);
-    std::unique_ptr<ColorSource> source = std::make_unique<ShuffleSource>(options);
+    std::unique_ptr<ColorSource> source;
+
+    if (options.source == Source::Shuffle) {
+        source = std::make_unique<ShuffleSource>(options);
+    } else if (options.source == Source::Hue) {
+        source = std::make_unique<HueSource>(options);
+    }
+
     std::unique_ptr<Generator> generator = std::make_unique<ComputeGenerator>(core, allocator, *source, colorQueue, options);
     generator->run();
 

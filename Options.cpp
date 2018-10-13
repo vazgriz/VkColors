@@ -102,7 +102,8 @@ Options parseArguments(int argc, char** argv) {
         32, false,
         64,
         1024,
-        static_cast<uint32_t>(std::chrono::system_clock::now().time_since_epoch().count())
+        static_cast<uint32_t>(std::chrono::system_clock::now().time_since_epoch().count()),
+        Source::Shuffle
     };
 
     bool userDepth = false;
@@ -184,6 +185,14 @@ Options parseArguments(int argc, char** argv) {
             }
             catch (...) {
                 argumentError(options, "Unable to parse max batch relative");
+            }
+        } else if (argument.name == "source") {
+            if (argument.value == "shuffle") {
+                options.source = Source::Shuffle;
+            } else if (argument.value == "hue") {
+                options.source = Source::Hue;
+            } else {
+                argumentError(options, "Unable to parse color source");
             }
         } else {
             std::cout << "Error: Could not parse argument '" << argument.name << "'\n";
