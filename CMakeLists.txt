@@ -44,6 +44,7 @@ add_executable(VkColors
     Renderer.cpp
     ColorSource.cpp
     ShuffleSource.cpp
+    HueSource.cpp
     ComputeGenerator.cpp
     WaveGenerator.cpp
     WaveGenerator2.cpp

@@ -7,6 +7,7 @@
 #include "Allocator.h"
 #include "Renderer.h"
 #include "ShuffleSource.h"
+#include "HueSource.h"
 #include "ComputeGenerator.h"
 #include "WaveGenerator.h"
 #include "WaveGenerator2.h"
@@ -38,8 +39,8 @@ int main(int argc, char** argv) {
     Allocator allocator = Allocator(core);
     ColorQueue colorQueue;
     Renderer renderer = Renderer(core, allocator, options.size, colorQueue);
-    ShuffleSource source = ShuffleSource(options);
-    std::unique_ptr<Generator> generator = std::make_unique<ComputeGenerator>(core, allocator, source, colorQueue, options);
+    std::unique_ptr<ColorSource> source = std::make_unique<ShuffleSource>(options);
+    std::unique_ptr<Generator> generator = std::make_unique<ComputeGenerator>(core, allocator, *source, colorQueue, options);
     generator->run();
 
     size_t frames = 0;
