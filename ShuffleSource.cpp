@@ -2,19 +2,14 @@
 #include <math.h>
 #include <random>
 
-uint8_t map(uint32_t num, uint32_t bitDepth) {
-    num = (num + 1) << (8 - bitDepth);
-    return static_cast<uint8_t>(num - 1);
-}
-
 ShuffleSource::ShuffleSource(const Options& options) {
     std::vector<Color32> colors;
     uint32_t bitDepth = options.bitDepth;
 
-    uint32_t max = static_cast<size_t>(pow(2, bitDepth));
-    for (size_t r = 0; r < max; r++) {
-        for (size_t g = 0; g < max; g++) {
-            for (size_t b = 0; b < max; b++) {
+    uint32_t max = static_cast<uint32_t>(pow(2, bitDepth));
+    for (uint32_t r = 0; r < max; r++) {
+        for (uint32_t g = 0; g < max; g++) {
+            for (uint32_t b = 0; b < max; b++) {
                 Color32 color = { map(r, bitDepth), map(g, bitDepth), map(b, bitDepth), 255 };
                 colors.push_back(color);
             }
