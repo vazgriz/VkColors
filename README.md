@@ -22,7 +22,7 @@ There are multiple options to change the behavior of the image generator.
 
   This sets the size of the image. Valid values are any size between `1x1` and `4096x4096`. Default is `512x512`.
 
-- `--source=[source]`
+- `--color=[source]`
 
   This sets the method used to color the image. Values that can be used are `shuffle` and `hue`. Default is `shuffle`.
 

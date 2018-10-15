@@ -186,7 +186,7 @@ Options parseArguments(int argc, char** argv) {
             catch (...) {
                 argumentError(options, "Unable to parse max batch relative");
             }
-        } else if (argument.name == "source") {
+        } else if (argument.name == "color") {
             if (argument.value == "shuffle") {
                 options.source = Source::Shuffle;
             } else if (argument.value == "hue") {
