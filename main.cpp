@@ -15,6 +15,8 @@
 #include "ColorQueue.h"
 #include "Options.h"
 
+#define AMD_VENDOR_ID 0x1002
+
 int main(int argc, char** argv) {
     auto last = std::chrono::system_clock::now();
     Options options = parseArguments(argc, argv);
@@ -31,7 +33,7 @@ int main(int argc, char** argv) {
 
     Core core = Core(window);
 
-    if (!options.userWorkGroupSize && core.device().physicalDevice().properties().vendorID == 4130) {
+    if (!options.userWorkGroupSize && core.device().physicalDevice().properties().vendorID == AMD_VENDOR_ID) {
         //if work group size not specified and using AMD hardware
         options.workGroupSize = 64;
     }
