@@ -1,19 +1,19 @@
 #include "WaveGenerator.h"
 
-WaveGenerator::WaveGenerator(ColorSource& source, Bitmap& bitmap, ColorQueue& colorQueue) {
+WaveGenerator::WaveGenerator(ColorSource& source, ColorQueue& colorQueue, Options& options) 
+    : m_bitmap(options.size.x, options.size.y) {
     m_source = &source;
-    m_bitmap = &bitmap;
     m_queue = &colorQueue;
     m_running = std::make_unique<std::atomic_bool>();
 
-    glm::ivec2 pos = { static_cast<int>(m_bitmap->width() / 2), static_cast<int>(m_bitmap->height() / 2) };
+    glm::ivec2 pos = { static_cast<int>(m_bitmap.width() / 2), static_cast<int>(m_bitmap.height() / 2) };
     if (m_source->hasNext()) {
-        m_bitmap->getPixel(pos.x, pos.y) = m_source->getNext();
+        m_bitmap.getPixel(pos.x, pos.y) = m_source->getNext();
         addNeighborsToOpenSet(pos);
     }
 }
 
-WaveGenerator::WaveGenerator(WaveGenerator&& other) {
+WaveGenerator::WaveGenerator(WaveGenerator&& other) : m_bitmap(std::move(other.m_bitmap)) {
     *this = std::move(other);
 }
 
@@ -72,8 +72,8 @@ size_t WaveGenerator::score() {
         for (size_t j = 0; j < 8; j++) {
             auto& n = neighbors[j];
             if (n.x >= 0 && n.y >= 0
-                && n.x < m_bitmap->width() && n.y < m_bitmap->height()) {
-                Color32 color = m_bitmap->getPixel(n.x, n.y);
+                && n.x < m_bitmap.width() && n.y < m_bitmap.height()) {
+                Color32 color = m_bitmap.getPixel(n.x, n.y);
                 if (color.a == 255) {
                     diffs[j] = length2(glm::ivec3{ color.r, color.g, color.b } - testColor);
                 }
@@ -95,7 +95,7 @@ size_t WaveGenerator::score() {
 void WaveGenerator::readResult(size_t result) {
     glm::ivec2 pos = m_openList[result];
     m_queue->enqueue(pos, m_color);
-    m_bitmap->getPixel(pos.x, pos.y) = m_color;
+    m_bitmap.getPixel(pos.x, pos.y) = m_color;
     addNeighborsToOpenSet(pos);
     m_openSet.erase(pos);
 }
@@ -119,8 +119,8 @@ void WaveGenerator::addNeighborsToOpenSet(glm::ivec2 pos) {
     for (size_t i = 0; i < 8; i++) {
         auto& n = neighbors[i];
         if (n.x >= 0 && n.y >= 0
-            && n.x < m_bitmap->width() && n.y < m_bitmap->height()
-            && m_bitmap->getPixel(n.x, n.y).a == 0) {
+            && n.x < m_bitmap.width() && n.y < m_bitmap.height()
+            && m_bitmap.getPixel(n.x, n.y).a == 0) {
             addToOpenSet(n);
         }
     }
