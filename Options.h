@@ -8,8 +8,15 @@ enum class Source {
     Hue
 };
 
+enum class GeneratorType {
+    Shader,
+    CPUWave,
+    CPUCoral,
+};
+
 struct Options {
     bool valid;
+    GeneratorType generator;
     std::string shader;
     glm::ivec2 size;
     int32_t bitDepth;

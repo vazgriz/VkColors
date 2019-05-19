@@ -14,9 +14,9 @@ VkColors [options]
 
 There are multiple options to change the behavior of the image generator.
 
-- `--shader=[shader]`
+- `--generator=[generator]`
 
-  This selects the algorithm to use in the image generator. Values that can be used are `wave` and `coral`. Default is `coral`.
+  This selects the algorithm to use in the image generator. Values that can be used are `wave`, `coral`, `cpu-wave`, and `cpu-coral`. Default is `coral`.
 
 - `--size=[width]x[height]`
 

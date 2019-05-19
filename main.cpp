@@ -49,7 +49,16 @@ int main(int argc, char** argv) {
         source = std::make_unique<HueSource>(options);
     }
 
-    std::unique_ptr<Generator> generator = std::make_unique<ComputeGenerator>(core, allocator, *source, colorQueue, options);
+    std::unique_ptr<Generator> generator;
+
+    if (options.generator == GeneratorType::Shader) {
+        generator = std::make_unique<ComputeGenerator>(core, allocator, *source, colorQueue, options);
+    } else if (options.generator == GeneratorType::CPUCoral) {
+        generator = std::make_unique<CoralGenerator>(*source, colorQueue, options);
+    } else if (options.generator == GeneratorType::CPUWave) {
+        generator = std::make_unique<WaveGenerator>(*source, colorQueue, options);
+    }
+
     generator->run();
 
     size_t frames = 0;

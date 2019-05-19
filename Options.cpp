@@ -96,6 +96,7 @@ int32_t getBitDepth(glm::ivec2 size) {
 Options parseArguments(int argc, char** argv) {
     Options options = {
         true,
+        GeneratorType::Shader,
         "shaders/coral.comp.spv",
         { 512, 512 },
         6,
@@ -117,10 +118,11 @@ Options parseArguments(int argc, char** argv) {
         if (!argument.valid) {
             options.valid = false;
             continue;
-        } else if (argument.name == "shader") {
+        } else if (argument.name == "generator") {
             if (argument.value.empty()) {
-                argumentError(options, "Must specify shader to use");
+                argumentError(options, "Must specify generator to use");
             } else if (argument.value == "wave" || argument.value == "coral") {
+                options.generator = GeneratorType::Shader;
                 options.shader = "shaders/" + argument.value + ".comp.spv";
 
                 if (!userMaxBatchRelative) {
@@ -130,8 +132,12 @@ Options parseArguments(int argc, char** argv) {
                         options.maxBatchRelative = 1024;
                     }
                 }
+            } else if (argument.value == "cpu-wave") {
+                options.generator = GeneratorType::CPUWave;
+            } else if (argument.value == "cpu-coral") {
+                options.generator = GeneratorType::CPUCoral;
             } else {
-                argumentError(options, "Shader must be 'wave' or 'coral'");
+                argumentError(options, "Shader must be 'wave', 'coral', 'cpu-wave', or 'cpu-coral'");
             }
         } else if (argument.name == "size") {
             parseSize(options, argument.value);
