@@ -77,13 +77,9 @@ size_t CoralGenerator::score() {
         };
 
         glm::ivec3 testColor = { m_color.r, m_color.g, m_color.b };
-        glm::int32_t diffs[8];
-
-        for (size_t j = 0; j < 8; j++) {
-            diffs[j] = std::numeric_limits<int32_t>::max();
-        }
 
         int32_t count = 0;
+        int32_t sum = 0;
 
         for (size_t j = 0; j < 8; j++) {
             auto& n = neighbors[j];
@@ -91,15 +87,10 @@ size_t CoralGenerator::score() {
                 && n.x < m_bitmap.width() && n.y < m_bitmap.height()) {
                 Color32 color = m_bitmap.getPixel(n.x, n.y);
                 if (color.a == 255) {
-                    diffs[j] = length2(glm::ivec3{ color.r, color.g, color.b } -testColor);
+                    sum += length2(glm::ivec3{ color.r, color.g, color.b } - testColor);
                     count++;
                 }
             }
-        }
-
-        int32_t sum = 0;
-        for (size_t j = 0; j < 8; j++) {
-            sum += diffs[j];
         }
 
         int32_t score = static_cast<int32_t>(sum / static_cast<float>(count));
