@@ -1,4 +1,6 @@
 #include "CoralGenerator.h"
+#include <chrono>
+#include <iostream>
 
 CoralGenerator::CoralGenerator(ColorSource& source, ColorQueue& colorQueue, Options& options)
     : m_bitmap(options.size.x, options.size.y) {
@@ -30,6 +32,8 @@ void CoralGenerator::stop() {
 }
 
 void CoralGenerator::mainLoop() {
+    auto start = std::chrono::steady_clock::now();
+
     while (*m_running) {
         if (!m_source->hasNext()) break;
         if (m_openSet.size() == 0) break;
@@ -44,6 +48,16 @@ void CoralGenerator::mainLoop() {
         size_t result = score();
         readResult(result);
     }
+
+    auto end = std::chrono::steady_clock::now();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(33));
+
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+    if (elapsed == 0) elapsed = 1;
+    size_t totalPixels = m_queue->totalCount();
+    size_t rate = totalPixels / elapsed;
+    std::cout << totalPixels << " in " << elapsed << "s (" << rate << " pps)\n";
 }
 
 size_t CoralGenerator::score() {
