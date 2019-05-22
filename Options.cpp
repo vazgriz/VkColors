@@ -127,7 +127,7 @@ Options parseArguments(int argc, char** argv) {
 
                 if (!userMaxBatchRelative) {
                     if (argument.value == "wave") {
-                        options.maxBatchRelative = 64;
+                        options.maxBatchRelative = 32;
                     } else {
                         options.maxBatchRelative = 1024;
                     }
