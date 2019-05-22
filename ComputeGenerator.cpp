@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cmath>
 #include <chrono>
+#include <iomanip>
 
 #define FRAMES 2
 
@@ -143,10 +144,14 @@ void ComputeGenerator::generatorLoop() {
 
     std::this_thread::sleep_for(std::chrono::milliseconds(33));
 
-    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
-    if (elapsed == 0) elapsed = 1;
+    auto elapsed = std::chrono::duration<double>(end - start).count();
     size_t totalPixels = m_colorQueue->totalCount();
-    size_t rate = totalPixels / elapsed;
+    size_t rate = (size_t)(totalPixels / elapsed);
+    if (elapsed < 10.0) {
+        std::cout << std::setprecision(1) << std::fixed;
+    } else {
+        std::cout << std::setprecision(0) << std::fixed;
+    }
     std::cout << totalPixels << " in " << elapsed << "s (" << rate << " pps)\n";
 }
 
